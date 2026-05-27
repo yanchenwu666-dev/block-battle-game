@@ -74,11 +74,12 @@ const GUN_SKINS = [
   { name: "Crimson", metal: 0x6d1f28, stock: 0x191919, accent: 0xff5a68 }
 ];
 const CHARACTERS = [
-  { name: "Steel", className: "steel", role: "Balanced assault fighter", hp: 100, speed: 9.5, skill: "Pending", skin: 0xd1a57d, shirt: 0x2d6c9f, pants: 0x24334b, hair: 0x101315, armor: 0x42505b, token: "linear-gradient(135deg,#4ea2ff,#285ff7)" },
-  { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Pending", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
-  { name: "Iris", className: "iris", role: "Precise designer with clean aim", hp: 95, speed: 9.8, skill: "Pending", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
-  { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Pending", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
-  { name: "Guardian", className: "guardian", role: "Wall builder / defender", hp: 105, speed: 9.1, skill: "Right click: place team wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
+  { name: "Steel", className: "steel", role: "Balanced assault fighter", hp: 100, speed: 9.5, skill: "Knife: arc blade", skin: 0xd1a57d, shirt: 0x2d6c9f, pants: 0x24334b, hair: 0x101315, armor: 0x42505b, token: "linear-gradient(135deg,#4ea2ff,#285ff7)" },
+  { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Knife: returning blade", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
+  { name: "Iris", className: "iris", role: "Precision shooter", hp: 95, speed: 9.8, skill: "Knife: homing blade", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
+  { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Knife: spear dash", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
+  { name: "Missile", className: "missile", role: "Remote missile knife controller", hp: 100, speed: 9.4, skill: "Right click: launch missile blade. Space controls it.", skin: 0xe2b48a, shirt: 0x2b2f8f, pants: 0x20223d, hair: 0x15151f, armor: 0x3d4cff, token: "linear-gradient(135deg,#5efcff,#354cff)" },
+  { name: "Guardian", className: "guardian", role: "Wall builder and defender", hp: 105, speed: 9.1, skill: "Right click: place team wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
 ];
 const WEAPONS = [
   { key: "Digit1", name: "Pistol", icon: "pistol", mag: 12, reserve: 72, damage: 22, cooldown: 0.22, range: 38, pellets: 1, spread: 0.012, auto: false, reload: 0.95 },
@@ -88,14 +89,16 @@ const WEAPONS = [
   { key: "Digit5", name: "Knife", icon: "knife", mag: 1, reserve: 0, damage: 48, cooldown: 0.48, range: 2.85, pellets: 1, spread: 0, auto: false, reload: 0, melee: true }
 ];
 const KNIFE_SKILLS = [
-  "右键蓄力，松开后抛物线飞出，蓄力越久伤害越高。",
-  "右键蓄力直线飞刀，沿原路返回，蓄力越久越痛。",
-  "右键蓄力锁定前方人机，追踪命中后返回，不伤自己。",
-  "右键蓄力后冲刺穿过敌人才造成伤害，速度和蓄力一起加成。",
-  "右键在自己身上放一面队友可穿过、敌人和敌方子弹会被挡住的能量墙。"
+  "Right click to charge, release to throw an arcing blade. More charge = more damage.",
+  "Right click to charge, release a straight returning blade. It can hit on the way out and back.",
+  "Right click to charge, lock onto a target and fire a homing blade.",
+  "Right click to charge, then dash forward. Damage happens when you pass through the enemy.",
+  "Right click to launch a controllable missile blade. Press Space to control its direction.",
+  "Right click to place a wall at your body. Allies and allied attacks pass through. Enemies and enemy bullets are blocked."
 ];
 const MAPS = [
-  { key: "duel", name: "1V1 决斗场", desc: "保留塔楼、地下矿道、房屋、掩体和武器系统；去掉吃鸡大地图，只打真人 1V1。" }
+  { key: "duel", name: "1V1 Arena", desc: "Online duel map with towers, tunnels, buildings, cover, weapons and skills." },
+  { key: "practice", name: "Solo Practice Range", desc: "Single-player practice mode for testing movement, weapons, knife skills and Guardian wall." }
 ];
 const SAVE_KEY = "block-battle-save-v1";
 
@@ -141,7 +144,7 @@ let knifeCharging = false;
 let spearDashTimer = 0;
 let spearDashCharge = 0;
 let wallSkillCooldown = 0;
-const WALL_CHARACTER_INDEX = 4;
+const WALL_CHARACTER_INDEX = 5;
 const WALL_WIDTH = 6.8;
 const WALL_HEIGHT = 3.3;
 const WALL_THICKNESS = 0.34;
@@ -544,7 +547,7 @@ function renderMapGrid() {
 function updateSelectedMapInfo() {
   if (!els.selectedMapInfo) return;
   const map = MAPS.find(item => item.key === selectedMap) || MAPS[0];
-  els.selectedMapInfo.textContent = `当前地图：${map.name}。${map.desc}`;
+  els.selectedMapInfo.textContent = `Current mode: ${map.name}. ${map.desc}`;
 }
 
 function renderCharacterGrid() {
@@ -554,7 +557,7 @@ function renderCharacterGrid() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = `character-card${index === characterIndex ? " selected" : ""}`;
-    card.innerHTML = `<strong>${character.name}</strong><span>${character.role}<br>技能：${KNIFE_SKILLS[index]}</span><i class="character-token"></i>`;
+    card.innerHTML = `<strong>${character.name}</strong><span>${character.role}<br>Skill: ${KNIFE_SKILLS[index]}</span><i class="character-token"></i>`;
     card.querySelector(".character-token").style.background = character.token;
     card.addEventListener("click", () => {
       characterIndex = index;
@@ -971,11 +974,14 @@ function releaseKnifeCharge() {
   const charge = clamp(knifeChargeTimer / 1.35, 0.18, 1);
   knifeCharging = false;
   knifeChargeTimer = 0;
+
   fireTimer = characterIndex === 3 ? 0.58 : 0.85;
+
   if (characterIndex === 0) throwSkillBlade("trident", charge);
   else if (characterIndex === 1) throwSkillBlade("boomerang", charge);
   else if (characterIndex === 2) throwSkillBlade("homing", charge);
-  else startSpearDash(charge);
+  else if (characterIndex === 3) startSpearDash(charge);
+  else if (characterIndex === 4) throwSkillBlade("homing", charge);
 }
 
 function updateChargeBar() {
@@ -994,7 +1000,7 @@ function startSpearDash(charge) {
   spearDashTimer = 1.05;
   spearDashCharge = charge;
   spearDashHits.clear();
-  flashMessage("长矛冲刺窗口");
+  flashMessage("Spear dash window");
 }
 
 function getBlockingObstacles(mode = "shot") {
@@ -1010,7 +1016,7 @@ function deployShieldWall(owner = "self", remoteData = null) {
   if (!started && owner === "self") return;
   if (owner === "self" && characterIndex !== WALL_CHARACTER_INDEX) return;
   if (owner === "self" && wallSkillCooldown > 0) {
-    flashMessage(`墙技能冷却 ${wallSkillCooldown.toFixed(1)}s`);
+  flashMessage(`Wall skill cooldown ${wallSkillCooldown.toFixed(1)}s`);
     return;
   }
   const dir = remoteData?.dir ? new THREE.Vector3(remoteData.dir.x || 0, 0, remoteData.dir.z || -1) : getViewMoveAxes().forward.clone();
