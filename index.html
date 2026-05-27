@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="zh-CN">
+
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,155 +19,108 @@
                 <h1 id="characterName">Steel</h1>
                 <p id="characterRole">Balanced assault fighter</p>
               </div>
-              <div class="hero-card">
-                <div id="lobbyFighter" class="lobby-fighter steel">
-                  <div class="fighter-shadow"></div>
-                  <div class="fighter-hair"></div>
-                  <div class="fighter-head"></div>
-                  <div class="fighter-eye left"></div>
-                  <div class="fighter-eye right"></div>
-                  <div class="fighter-body"></div>
-                  <div class="fighter-arm left"></div>
-                  <div class="fighter-arm right"></div>
-                  <div class="fighter-gun"></div>
-                  <div class="fighter-leg left"></div>
-                  <div class="fighter-leg right"></div>
-                  <div class="fighter-boot left"></div>
-                  <div class="fighter-boot right"></div>
-                </div>
-              </div>
-              <div class="stat-row">
-                <div class="chip"><strong id="characterHp">100</strong><span>HP</span></div>
-                <div class="chip"><strong id="characterSpeed">9.5</strong><span>Speed</span></div>
-                <div class="chip"><strong id="characterSkill">Pending</strong><span>Skill</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="lobby-col center-col">
-            <div class="panel lobby-top">
-              <div>
-                <div class="section-title">Lobby</div>
-                <div class="lobby-title">Block Battle 1V1</div>
-                <p>创建房间，朋友输入房间号码就能加入。角色、武器、枪皮、视角和地图玩法都会保留。</p>
-              </div>
-              <div class="resource"><span></span><strong id="coins">2450</strong></div>
-              <div class="resource trophy-resource"><span></span><strong id="lobbyTrophies">0</strong></div>
-            </div>
-            <div class="panel room-panel">
-              <div class="section-title">1V1 Room</div>
-              <div class="room-actions">
-                <button id="createRoom" type="button" class="mini-btn primary">创建房间</button>
-                <input id="roomCodeInput" maxlength="6" inputmode="numeric" placeholder="输入房间号" />
-                <button id="joinRoom" type="button" class="mini-btn primary">加入房间</button>
-              </div>
-              <div id="roomStatus" class="room-status">先创建房间，或输入朋友给你的号码。</div>
-            </div>
-            <div class="panel modes-panel">
-              <div class="section-title">Characters</div>
-              <div id="characterGrid" class="character-grid"></div>
-            </div>
-            <div class="panel map-panel">
-              <div class="section-title">1V1 Map</div>
-              <div id="mapGrid" class="map-grid"></div>
-            </div>
-            <div class="lobby-bottom">
-              <div class="panel task-panel">
-                <div class="section-title">1V1 Rule</div>
-                <div class="task-row"><strong>目标：击倒对手</strong><span>Best</span></div>
-                <div class="progress"><div></div></div>
-                <div class="task-row"><strong>创建房间后分享号码</strong><span>Code</span></div>
-                <div class="progress"><div style="width:100%"></div></div>
-              </div>
-              <div class="panel play-panel">
-                <div>
-                  <div class="section-title">Ready</div>
-                  <p id="selectedMapInfo">当前模式：网页 1V1。先创建/加入房间，等两个人都进入后开始。</p>
-                </div>
-                <button id="play" type="button">开始 1V1</button>
-              </div>
-            </div>
-          </div>
-          <div class="lobby-col right-col">
-            <div class="panel">
-              <div class="section-title">Gun Design</div>
-              <div id="skinRow" class="skin-row"></div>
-            </div>
-            <div class="panel">
-              <div class="section-title">Weapon Workshop</div>
-              <div id="armoryList" class="armory-list"></div>
-            </div>
+
+```
+          <div class="stat-row">
+            <div class="chip"><strong id="characterHp">100</strong><span>HP</span></div>
+            <div class="chip"><strong id="characterSpeed">9.5</strong><span>Speed</span></div>
+            <div class="chip"><strong id="characterSkill">Skill</strong><span>Ability</span></div>
           </div>
         </div>
-      </section>
-      <div id="hud">
-        <div id="score">
-          <span>击倒</span>
-          <strong id="kills">0</strong>
-        </div>
-        <div id="waveBox">
-          <span>房间</span>
-          <strong id="wave">----</strong>
-        </div>
-        <div id="trophyBox">
-          <span>奖杯</span>
-          <strong id="trophies">0</strong>
-        </div>
-        <div id="floorBox">
-          <span>楼层</span>
-          <strong id="floor">1F</strong>
-        </div>
-        <button id="viewButton" type="button">3D</button>
       </div>
-      <canvas id="radar" width="150" height="150"></canvas>
-      <canvas id="topdown2d" width="1280" height="720"></canvas>
-      <div id="crosshair" aria-hidden="true"></div>
-      <div id="scopeOverlay" aria-hidden="true"><div class="scope-glass"></div></div>
-      <div id="hitmarker" aria-hidden="true"></div>
-      <div id="damage" aria-hidden="true"></div>
-      <div id="waveAnnounce" aria-hidden="true"></div>
-      <div id="chargeBar" aria-hidden="true"><span></span></div>
-      <div id="bottom">
-        <span id="health">100 HP</span>
-        <span id="armor">50 ARMOR</span>
-        <span id="weaponName">Rifle</span>
-        <span id="ammo">30 / 90</span>
-        <span id="hint">电脑：WASD移动 Shift疾跑 Shift+双击W滑铲 空格跳跃 R趴下 1-4枪支 5刀 Q换弹 左键攻击 右键瞄准/开门 ｜ 手机：左摇杆移动，右边空白区域转视角，按钮攻击/瞄准/跳跃/滑铲/趴下/换弹</span>
+
+      <div class="lobby-col center-col">
+        <div class="panel lobby-top">
+          <div>
+            <div class="section-title">Lobby</div>
+            <div class="lobby-title">Block Battle 1V1</div>
+            <p>Create a room and share the code with your friend.</p>
+          </div>
+        </div>
+
+        <div class="panel room-panel">
+          <div class="section-title">1V1 Room</div>
+
+          <div class="room-actions">
+            <button id="createRoom" type="button" class="mini-btn primary">Create Room</button>
+
+            <input
+              id="roomCodeInput"
+              maxlength="6"
+              inputmode="numeric"
+              placeholder="Enter Room Code"
+            />
+
+            <button id="joinRoom" type="button" class="mini-btn primary">Join Room</button>
+          </div>
+
+          <div id="roomStatus" class="room-status">
+            Create a room or enter your friend's code.
+          </div>
+        </div>
+
+        <div class="panel modes-panel">
+          <div class="section-title">Heroes</div>
+          <div id="characterGrid" class="character-grid"></div>
+        </div>
+
+        <div class="panel map-panel">
+          <div class="section-title">Arena</div>
+          <div id="mapGrid" class="map-grid"></div>
+        </div>
+
+        <div class="lobby-bottom">
+          <div class="panel task-panel">
+            <div class="section-title">Rules</div>
+
+            <div class="task-row">
+              <strong>Defeat your opponent</strong>
+              <span>Best Of 1</span>
+            </div>
+
+            <div class="progress"><div></div></div>
+
+            <div class="task-row">
+              <strong>Share room code</strong>
+              <span>Online</span>
+            </div>
+
+            <div class="progress"><div style="width:100%"></div></div>
+          </div>
+
+          <div class="panel play-panel">
+            <div>
+              <div class="section-title">Ready</div>
+
+              <p id="selectedMapInfo">
+                Practice Range and Online 1V1 supported.
+              </p>
+            </div>
+
+            <button id="play" type="button">START 1V1</button>
+          </div>
+        </div>
       </div>
-      <div id="hotbar" aria-label="weapon hotbar"></div>
-      <div id="message"></div>
-      <div id="pause" class="hidden">PAUSED</div>
-      <div id="mobileControls" aria-label="mobile controls">
-        <div id="moveStick" class="touch-stick" aria-label="move joystick">
-          <div class="stick-base"><div id="moveKnob" class="stick-knob"></div></div>
-          <div class="stick-label">MOVE</div>
-        </div>
-        <div id="lookPad" aria-label="look area"></div>
-        <div class="mobile-actions">
-          <button id="mobileAim" class="mobile-btn aim" type="button">右键<br>AIM</button>
-          <button id="mobileFire" class="mobile-btn fire" type="button">左键<br>FIRE</button>
-          <button id="mobileJump" class="mobile-btn" type="button">跳跃</button>
-          <button id="mobileSlide" class="mobile-btn" type="button">滑铲</button>
-          <button id="mobileProne" class="mobile-btn" type="button">趴下</button>
-          <button id="mobileReload" class="mobile-btn" type="button">换弹</button>
-          <button id="mobileInteract" class="mobile-btn" type="button">开门</button>
-        </div>
-        <div id="mobileWeaponBar" aria-label="mobile weapon buttons">
-          <button class="mobile-weapon" data-weapon="0" type="button">1</button>
-          <button class="mobile-weapon" data-weapon="1" type="button">2</button>
-          <button class="mobile-weapon" data-weapon="2" type="button">3</button>
-          <button class="mobile-weapon" data-weapon="3" type="button">4</button>
-          <button class="mobile-weapon" data-weapon="4" type="button">刀</button>
-        </div>
-      </div>
-    </main>
-    <script src="./config.js"></script>
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "./vendor/three.module.js"
-        }
-      }
-    </script>
-    <script type="module" src="./src/main.js?v=mobile-github-render"></script>
+    </div>
+  </section>
+
+  <div id="bottom">
+    <span id="health">100 HP</span>
+    <span id="armor">50 ARMOR</span>
+    <span id="weaponName">Rifle</span>
+    <span id="ammo">30 / 90</span>
+
+    <span id="hint">
+      PC: WASD Move | Shift Sprint | Space Jump | Left Click Fire | Right Click Aim/Skill |
+      Q Reload | 1-5 Weapons
+    </span>
+  </div>
+
+  <script src="./config.js"></script>
+
+  <script type="module" src="./src/main.js?v=ultimate-english"></script>
+</main>
+```
+
   </body>
 </html>
