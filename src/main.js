@@ -74,12 +74,12 @@ const GUN_SKINS = [
   { name: "Crimson", metal: 0x6d1f28, stock: 0x191919, accent: 0xff5a68 }
 ];
 const CHARACTERS = [
-  { name: "Steel", className: "steel", role: "Balanced assault fighter", hp: 100, speed: 9.5, skill: "Arc throwing knife", skin: 0xd1a57d, shirt: 0x2d6c9f, pants: 0x24334b, hair: 0x101315, armor: 0x42505b, token: "linear-gradient(135deg,#4ea2ff,#285ff7)" },
-  { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Returning boomerang knife", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
-  { name: "Iris", className: "iris", role: "Precision fighter", hp: 95, speed: 9.8, skill: "Homing knife", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
-  { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Dash pierce", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
-  { name: "Missile", className: "missile", role: "Remote flying knife controller", hp: 95, speed: 9.2, skill: "Right click launches a controllable missile knife", skin: 0xd8a274, shirt: 0x516a78, pants: 0x18212d, hair: 0x1d1713, armor: 0x7b8d96, token: "linear-gradient(135deg,#c5f1ff,#667985)" },
-  { name: "Guardian", className: "guardian", role: "Wall builder / defender", hp: 105, speed: 9.1, skill: "Right click: place team wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
+  { name: "Steel", className: "steel", role: "Balanced assault fighter", hp: 100, speed: 9.5, skill: "Arc Blade", skin: 0xd1a57d, shirt: 0x2d6c9f, pants: 0x24334b, hair: 0x101315, armor: 0x42505b, token: "linear-gradient(135deg,#4ea2ff,#285ff7)" },
+  { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Returning Blade", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
+  { name: "Iris", className: "iris", role: "Precision fighter", hp: 95, speed: 9.8, skill: "Homing Blade", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
+  { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Spear Dash", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
+  { name: "Missile", className: "missile", role: "Remote flying knife controller", hp: 95, speed: 9.2, skill: "Controllable Missile Blade", skin: 0xd8a274, shirt: 0x516a78, pants: 0x18212d, hair: 0x1d1713, armor: 0x7b8d96, token: "linear-gradient(135deg,#c5f1ff,#667985)" },
+  { name: "Guardian", className: "guardian", role: "Wall builder / defender", hp: 105, speed: 9.1, skill: "Team Wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
 ];
 const WEAPONS = [
   { key: "Digit1", name: "Pistol", icon: "pistol", mag: 12, reserve: 72, damage: 22, cooldown: 0.22, range: 38, pellets: 1, spread: 0.012, auto: false, reload: 0.95 },
@@ -89,12 +89,12 @@ const WEAPONS = [
   { key: "Digit5", name: "Knife", icon: "knife", mag: 1, reserve: 0, damage: 48, cooldown: 0.48, range: 2.85, pellets: 1, spread: 0, auto: false, reload: 0, melee: true }
 ];
 const KNIFE_SKILLS = [
-  "Hold right click to charge an arcing knife. More charge means more damage.",
-  "Hold right click to throw a returning boomerang knife.",
-  "Hold right click to lock a target in view. The knife homes in and returns.",
-  "Hold right click, then dash through enemies to deal piercing damage.",
-  "Right click launches a slower missile knife. Hold Space while it flies to steer it.",
-  "Right click places a team wall on yourself. Allies pass through; enemies and enemy shots are blocked."
+  "Arc Blade",
+  "Returning Blade",
+  "Homing Blade",
+  "Spear Dash",
+  "Controllable Missile Blade",
+  "Team Wall"
 ];
 const MAPS = [
   { key: "practice", name: "Solo Practice", desc: "Practice alone against AI bots. No room code or Render connection required." },
@@ -997,13 +997,13 @@ function releaseKnifeCharge() {
   const charge = clamp(knifeChargeTimer / 1.35, 0.18, 1);
   knifeCharging = false;
   knifeChargeTimer = 0;
+  if (characterIndex === WALL_CHARACTER_INDEX) return;
   fireTimer = characterIndex === 3 ? 0.58 : characterIndex === 4 ? 1.2 : 0.85;
   if (characterIndex === 0) throwSkillBlade("trident", charge);
   else if (characterIndex === 1) throwSkillBlade("boomerang", charge);
   else if (characterIndex === 2) throwSkillBlade("homing", charge);
   else if (characterIndex === 3) startSpearDash(charge);
   else if (characterIndex === 4) throwSkillBlade("missile", charge);
-  else deployShieldWall("self");
 }
 
 function updateChargeBar() {
@@ -1025,11 +1025,10 @@ function startSpearDash(charge) {
   flashMessage("Piercing dash window");
 }
 
-function getBlockingObstacles(mode = "shot") {
+function getBlockingObstacles(mode = "outgoingShot") {
   return obstacles.filter(obstacle => {
     if (obstacle.userData.open) return false;
-    // Your own Guardian wall is friendly: you and your bullets/skills can pass through it.
-    if (obstacle.userData.shieldWall && obstacle.userData.owner === "self") return false;
+    if (obstacle.userData.shieldWall && obstacle.userData.owner === "self" && (mode === "outgoingShot" || mode === "shot")) return false;
     return true;
   });
 }
@@ -1370,9 +1369,9 @@ function findForgivingHit(origin, direction, range) {
   return best;
 }
 
-function isBlocked(origin, direction, distance) {
+function isBlocked(origin, direction, distance, mode = "outgoingShot") {
   raycaster.set(origin, direction);
-  const walls = raycaster.intersectObjects(getBlockingObstacles("shot"), false);
+  const walls = raycaster.intersectObjects(getBlockingObstacles(mode), false);
   return walls.some(hit => hit.distance < distance);
 }
 
@@ -1383,7 +1382,7 @@ function hasLineOfSight3d(from, to) {
   const distance = direction.length();
   if (distance <= 0) return true;
   direction.normalize();
-  return !isBlocked(origin, direction, distance);
+  return !isBlocked(origin, direction, distance, "incomingShot");
 }
 
 function getHitDamageScale(hit) {
@@ -3018,6 +3017,7 @@ function part(w, h, d, material, x, y, z) {
 function keepOutOfObstacles(position, radius, y = position.y) {
   for (const obstacle of obstacles) {
     if (obstacle.userData.floorSlab) continue;
+    if (obstacle.userData.shieldWall && obstacle.userData.owner === "self") continue;
     const box = new THREE.Box3().setFromObject(obstacle);
     if (obstacle.userData.lowBarrier && (y < box.min.y - LOW_BARRIER_LOWER_MARGIN || y > box.max.y + LOW_BARRIER_CLEARANCE)) continue;
     if (obstacle.userData.stepTop && y >= box.max.y - 0.08) continue;
@@ -3262,6 +3262,7 @@ function handleSocketMessage(data) {
     return;
   }
   if (data.type === "hit") {
+    if (isProtectedFromRemoteHit()) return;
     applyDamage(Number(data.damage) || 0);
     return;
   }
@@ -3278,6 +3279,20 @@ function handleSocketMessage(data) {
     updateRoomStatus(data.message || "Room error", "bad");
     flashMessage(data.message || "Room error");
   }
+}
+
+function isProtectedFromRemoteHit() {
+  const remoteId = getRemotePlayerId();
+  const state = remoteId ? multiplayer.players[remoteId] : null;
+  if (!state) return false;
+  const stateY = Number.isFinite(Number(state.y)) ? Number(state.y) : 0;
+  const origin = new THREE.Vector3(Number(state.x) || 0, stateY + 0.8, Number(state.z) || 0);
+  const target = player.position.clone().add(new THREE.Vector3(0, 0.8, 0));
+  const direction = target.clone().sub(origin);
+  const distance = direction.length();
+  if (distance <= 0) return false;
+  direction.normalize();
+  return isBlocked(origin, direction, distance, "incomingShot");
 }
 
 function getRemotePlayerId() {
