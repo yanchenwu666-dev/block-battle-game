@@ -47,7 +47,7 @@
               <div>
                 <div class="section-title">Lobby</div>
                 <div class="lobby-title">Block Battle 1V1</div>
-                <p>创建房间，朋友输入房间号码就能加入。角色、武器、枪皮、视角和地图玩法都会保留。</p>
+                <p>How to play: create or join a room, choose a fighter, then defeat the other player. Use WASD to move, the mouse to aim, left click to attack, right click to aim or use your knife skill, and number keys to switch weapons. On mobile, use the left stick to move and the right side of the screen to look.</p>
               </div>
               <div class="resource"><span></span><strong id="coins">2450</strong></div>
               <div class="resource trophy-resource"><span></span><strong id="lobbyTrophies">0</strong></div>
@@ -55,11 +55,11 @@
             <div class="panel room-panel">
               <div class="section-title">1V1 Room</div>
               <div class="room-actions">
-                <button id="createRoom" type="button" class="mini-btn primary">创建房间</button>
-                <input id="roomCodeInput" maxlength="6" inputmode="numeric" placeholder="输入房间号" />
-                <button id="joinRoom" type="button" class="mini-btn primary">加入房间</button>
+                <button id="createRoom" type="button" class="mini-btn primary">Create Room</button>
+                <input id="roomCodeInput" maxlength="6" inputmode="numeric" placeholder="Enter room code" />
+                <button id="joinRoom" type="button" class="mini-btn primary">Join Room</button>
               </div>
-              <div id="roomStatus" class="room-status">先创建房间，或输入朋友给你的号码。</div>
+              <div id="roomStatus" class="room-status">Create a room first, or enter the code from your friend.</div>
             </div>
             <div class="panel modes-panel">
               <div class="section-title">Characters</div>
@@ -72,17 +72,17 @@
             <div class="lobby-bottom">
               <div class="panel task-panel">
                 <div class="section-title">1V1 Rule</div>
-                <div class="task-row"><strong>目标：击倒对手</strong><span>Best</span></div>
+                <div class="task-row"><strong>Goal: defeat the opponent</strong><span>Best</span></div>
                 <div class="progress"><div></div></div>
-                <div class="task-row"><strong>创建房间后分享号码</strong><span>Code</span></div>
+                <div class="task-row"><strong>Create a room, then share the code</strong><span>Code</span></div>
                 <div class="progress"><div style="width:100%"></div></div>
               </div>
               <div class="panel play-panel">
                 <div>
                   <div class="section-title">Ready</div>
-                  <p id="selectedMapInfo">当前模式：网页 1V1。先创建/加入房间，等两个人都进入后开始。</p>
+                  <p id="selectedMapInfo">Current mode: Web 1V1. Create or join a room, then start after both players are in.</p>
                 </div>
-                <button id="play" type="button">开始 1V1</button>
+                <button id="play" type="button">Start 1V1</button>
               </div>
             </div>
           </div>
@@ -100,19 +100,19 @@
       </section>
       <div id="hud">
         <div id="score">
-          <span>击倒</span>
+          <span>KOs</span>
           <strong id="kills">0</strong>
         </div>
         <div id="waveBox">
-          <span>房间</span>
+          <span>Room</span>
           <strong id="wave">----</strong>
         </div>
         <div id="trophyBox">
-          <span>奖杯</span>
+          <span>Trophies</span>
           <strong id="trophies">0</strong>
         </div>
         <div id="floorBox">
-          <span>楼层</span>
+          <span>Floor</span>
           <strong id="floor">1F</strong>
         </div>
         <button id="viewButton" type="button">3D</button>
@@ -130,7 +130,7 @@
         <span id="armor">50 ARMOR</span>
         <span id="weaponName">Rifle</span>
         <span id="ammo">30 / 90</span>
-        <span id="hint">电脑：WASD移动 Shift疾跑 Shift+双击W滑铲 空格跳跃 R趴下 1-4枪支 5刀 Q换弹 左键攻击 右键瞄准/开门 ｜ 手机：左摇杆移动，右边空白区域转视角，按钮攻击/瞄准/跳跃/滑铲/趴下/换弹</span>
+        <span id="hint">Desktop: WASD move, Shift sprint, Shift+double-tap W slide, Space jump, R prone, 1-4 guns, 5 Knife, Q reload, left click attack, right click aim/open. Mobile: left stick moves, right side looks, buttons attack/aim/jump/slide/prone/reload.</span>
       </div>
       <div id="hotbar" aria-label="weapon hotbar"></div>
       <div id="message"></div>
@@ -142,20 +142,20 @@
         </div>
         <div id="lookPad" aria-label="look area"></div>
         <div class="mobile-actions">
-          <button id="mobileAim" class="mobile-btn aim" type="button">右键<br>AIM</button>
-          <button id="mobileFire" class="mobile-btn fire" type="button">左键<br>FIRE</button>
-          <button id="mobileJump" class="mobile-btn" type="button">跳跃</button>
-          <button id="mobileSlide" class="mobile-btn" type="button">滑铲</button>
-          <button id="mobileProne" class="mobile-btn" type="button">趴下</button>
-          <button id="mobileReload" class="mobile-btn" type="button">换弹</button>
-          <button id="mobileInteract" class="mobile-btn" type="button">开门</button>
+          <button id="mobileAim" class="mobile-btn aim" type="button">RIGHT<br>AIM</button>
+          <button id="mobileFire" class="mobile-btn fire" type="button">LEFT<br>FIRE</button>
+          <button id="mobileJump" class="mobile-btn" type="button">Jump</button>
+          <button id="mobileSlide" class="mobile-btn" type="button">Slide</button>
+          <button id="mobileProne" class="mobile-btn" type="button">Prone</button>
+          <button id="mobileReload" class="mobile-btn" type="button">Reload</button>
+          <button id="mobileInteract" class="mobile-btn" type="button">Open</button>
         </div>
         <div id="mobileWeaponBar" aria-label="mobile weapon buttons">
           <button class="mobile-weapon" data-weapon="0" type="button">1</button>
           <button class="mobile-weapon" data-weapon="1" type="button">2</button>
           <button class="mobile-weapon" data-weapon="2" type="button">3</button>
           <button class="mobile-weapon" data-weapon="3" type="button">4</button>
-          <button class="mobile-weapon" data-weapon="4" type="button">刀</button>
+          <button class="mobile-weapon" data-weapon="4" type="button">Knife</button>
         </div>
       </div>
     </main>
