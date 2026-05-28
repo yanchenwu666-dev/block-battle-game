@@ -74,12 +74,12 @@ const GUN_SKINS = [
   { name: "Crimson", metal: 0x6d1f28, stock: 0x191919, accent: 0xff5a68 }
 ];
 const CHARACTERS = [
-  { name: "Steel", className: "steel", role: "Balanced assault fighter", hp: 100, speed: 9.5, skill: "Knife: arc blade", skin: 0xd1a57d, shirt: 0x2d6c9f, pants: 0x24334b, hair: 0x101315, armor: 0x42505b, token: "linear-gradient(135deg,#4ea2ff,#285ff7)" },
-  { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Knife: returning blade", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
-  { name: "Iris", className: "iris", role: "Precision shooter", hp: 95, speed: 9.8, skill: "Knife: homing blade", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
-  { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Knife: spear dash", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
-  { name: "Missile", className: "missile", role: "Remote missile knife controller", hp: 100, speed: 9.4, skill: "Right click: launch missile blade. Space controls it.", skin: 0xe2b48a, shirt: 0x2b2f8f, pants: 0x20223d, hair: 0x15151f, armor: 0x3d4cff, token: "linear-gradient(135deg,#5efcff,#354cff)" },
-  { name: "Guardian", className: "guardian", role: "Wall builder and defender", hp: 105, speed: 9.1, skill: "Right click: place team wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
+  { name: "Steel", className: "steel", role: "Balanced assault fighter", hp: 100, speed: 9.5, skill: "Arc throwing knife", skin: 0xd1a57d, shirt: 0x2d6c9f, pants: 0x24334b, hair: 0x101315, armor: 0x42505b, token: "linear-gradient(135deg,#4ea2ff,#285ff7)" },
+  { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Returning boomerang knife", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
+  { name: "Iris", className: "iris", role: "Precision fighter", hp: 95, speed: 9.8, skill: "Homing knife", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
+  { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Dash pierce", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
+  { name: "Missile", className: "missile", role: "Remote flying knife controller", hp: 95, speed: 9.2, skill: "Right click launches a controllable missile knife", skin: 0xd8a274, shirt: 0x516a78, pants: 0x18212d, hair: 0x1d1713, armor: 0x7b8d96, token: "linear-gradient(135deg,#c5f1ff,#667985)" },
+  { name: "Guardian", className: "guardian", role: "Wall builder / defender", hp: 105, speed: 9.1, skill: "Right click: place team wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
 ];
 const WEAPONS = [
   { key: "Digit1", name: "Pistol", icon: "pistol", mag: 12, reserve: 72, damage: 22, cooldown: 0.22, range: 38, pellets: 1, spread: 0.012, auto: false, reload: 0.95 },
@@ -89,16 +89,16 @@ const WEAPONS = [
   { key: "Digit5", name: "Knife", icon: "knife", mag: 1, reserve: 0, damage: 48, cooldown: 0.48, range: 2.85, pellets: 1, spread: 0, auto: false, reload: 0, melee: true }
 ];
 const KNIFE_SKILLS = [
-  "Right click to charge, release to throw an arcing blade. More charge = more damage.",
-  "Right click to charge, release a straight returning blade. It can hit on the way out and back.",
-  "Right click to charge, lock onto a target and fire a homing blade.",
-  "Right click to charge, then dash forward. Damage happens when you pass through the enemy.",
-  "Right click to launch a controllable missile blade. Press Space to control its direction.",
-  "Right click to place a wall at your body. Allies and allied attacks pass through. Enemies and enemy bullets are blocked."
+  "Hold right click to charge an arcing knife. More charge means more damage.",
+  "Hold right click to throw a returning boomerang knife.",
+  "Hold right click to lock a target in view. The knife homes in and returns.",
+  "Hold right click, then dash through enemies to deal piercing damage.",
+  "Right click launches a slower missile knife. Hold Space while it flies to steer it.",
+  "Right click places a team wall on yourself. Allies pass through; enemies and enemy shots are blocked."
 ];
 const MAPS = [
-  { key: "duel", name: "1V1 Arena", desc: "Online duel map with towers, tunnels, buildings, cover, weapons and skills." },
-  { key: "practice", name: "Solo Practice Range", desc: "Single-player practice mode for testing movement, weapons, knife skills and Guardian wall." }
+  { key: "practice", name: "Solo Practice", desc: "Practice alone against AI bots. No room code or Render connection required." },
+  { key: "duel", name: "Online 1V1", desc: "Create or join a room, wait for an opponent, then fight a real 1V1 match." }
 ];
 const SAVE_KEY = "block-battle-save-v1";
 
@@ -111,7 +111,7 @@ let armor = 50;
 let weaponIndex = 0;
 let gunSkinIndex = 0;
 let characterIndex = 0;
-let selectedMap = "duel";
+let selectedMap = "practice";
 let pubgExpanded = false;
 let coins = 2450;
 let trophies = 0;
@@ -547,7 +547,7 @@ function renderMapGrid() {
 function updateSelectedMapInfo() {
   if (!els.selectedMapInfo) return;
   const map = MAPS.find(item => item.key === selectedMap) || MAPS[0];
-  els.selectedMapInfo.textContent = `Current mode: ${map.name}. ${map.desc}`;
+  els.selectedMapInfo.textContent = `Selected mode: ${map.name}. ${map.desc}`;
 }
 
 function renderCharacterGrid() {
@@ -618,7 +618,7 @@ function renderArmoryList() {
       saveProgress();
       if (els.coins) els.coins.textContent = coins;
       renderArmoryList();
-      flashMessage(`${weapon.name} 升级到 Lv.${weaponLevels[index]}`);
+      flashMessage(`${weapon.name} upgraded to Lv.${weaponLevels[index]}`);
     });
     els.armoryList.append(item);
   });
@@ -647,29 +647,49 @@ function updateMobileWeaponButtons() {
 }
 
 function startGame() {
-  if (!multiplayer.roomCode) {
-    flashMessage("先创建房间或加入房间");
-    updateRoomStatus("先创建房间或输入朋友的房间号。", "bad");
-    return;
-  }
-  if (!multiplayer.opponentReady) {
-    flashMessage("等待另一个玩家加入");
-    updateRoomStatus(`房间 ${multiplayer.roomCode}：等待朋友加入。`, "warn");
-    return;
-  }
   started = true;
   hp = CHARACTERS[characterIndex]?.hp || 100;
   armor = 50;
   kills = 0;
   matchTrophies = 0;
-  wave = multiplayer.roomCode;
-  clearBots();
-  ensureRemoteBot();
-  setPlayerSpawn(multiplayer.role === "host" ? 1 : 2);
-  sendSocket({ type: "ready", characterIndex, gunSkinIndex });
+  inventory = WEAPONS.map(weapon => ({ ammo: weapon.mag, reserve: weapon.reserve }));
+  reloadTimer = 0;
+  fireTimer = 0;
+  mouseDown = false;
+  ads = false;
+  prone = false;
+  sliding = false;
+  player.eyeHeight = STAND_EYE_HEIGHT;
+
+  if (selectedMap === "practice") {
+    wave = 1;
+    clearBots();
+    spawnBots(10);
+    setPlayerSpawn(1);
+    updateRoomStatus("Solo Practice: AI bots spawned. No room required.", "ok");
+  } else {
+    if (!multiplayer.roomCode) {
+      started = false;
+      flashMessage("Create or join a room first");
+      updateRoomStatus("Create a room or enter your friend's room code first.", "bad");
+      return;
+    }
+    if (!multiplayer.opponentReady) {
+      started = false;
+      flashMessage("Waiting for opponent");
+      updateRoomStatus(`Room ${multiplayer.roomCode}: waiting for opponent.`, "warn");
+      return;
+    }
+    wave = multiplayer.roomCode;
+    clearBots();
+    ensureRemoteBot();
+    setPlayerSpawn(multiplayer.role === "host" ? 1 : 2);
+    sendSocket({ type: "ready", characterIndex, gunSkinIndex });
+  }
   els.menu.classList.add("hidden");
   if (!mobileInput.enabled) renderer.domElement.requestPointerLock?.();
-  flashMessage(mobileInput.enabled ? "1V1 开始：左摇杆移动，右侧滑动转视角" : "1V1 开始");
+  const modeLabel = selectedMap === "practice" ? "Solo Practice started" : "Online 1V1 started";
+  flashMessage(mobileInput.enabled ? `${modeLabel}: left stick moves, right side looks` : modeLabel);
 }
 
 function animate(now) {
@@ -678,13 +698,14 @@ function animate(now) {
   requestAnimationFrame(animate);
   if (started && !paused) {
     updatePlayer(dt);
-    updateMultiplayer(dt);
+    if (selectedMap === "duel") updateMultiplayer(dt);
+    if (selectedMap === "practice") updateBots(dt);
     updateCombat(dt);
     updatePickups(dt);
     updateTracers(dt);
     updateImpactMarks(dt);
     updateSkillProjectiles(dt);
-    updateWave();
+    if (selectedMap === "practice") updateWave();
   }
   updateCamera(dt);
   drawTopdown2d();
@@ -714,7 +735,8 @@ function updatePlayer(dt) {
   const z = inputZ / length;
 
   updateSlide(dt);
-  const baseSpeed = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint ? SPRINT_SPEED : PLAYER_SPEED;
+  const characterSpeed = CHARACTERS[characterIndex]?.speed || PLAYER_SPEED;
+  const baseSpeed = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint ? characterSpeed * (SPRINT_SPEED / PLAYER_SPEED) : characterSpeed;
   const speed = prone ? baseSpeed * 0.42 : baseSpeed;
   const targetEye = sliding ? SLIDE_EYE_HEIGHT : prone ? PRONE_EYE_HEIGHT : STAND_EYE_HEIGHT;
   player.eyeHeight += (targetEye - player.eyeHeight) * Math.min(1, dt * 14);
@@ -793,6 +815,7 @@ function updateStairs(dt) {
 function updateBots(dt) {
   let activeShooters = 0;
   for (const bot of bots) {
+    if (bot.isRemote) continue;
     if (bot.deadTimer > 0) {
       if (bot.deadTimer >= 900) continue;
       bot.deadTimer -= dt;
@@ -855,7 +878,7 @@ function updateCombat(dt) {
     reloadTimer -= dt;
     if (reloadTimer <= 0) {
       finishReload();
-      flashMessage("换弹完成");
+      flashMessage("Reload complete");
     }
   }
   hitTimer = Math.max(0, hitTimer - dt);
@@ -974,14 +997,13 @@ function releaseKnifeCharge() {
   const charge = clamp(knifeChargeTimer / 1.35, 0.18, 1);
   knifeCharging = false;
   knifeChargeTimer = 0;
-
-  fireTimer = characterIndex === 3 ? 0.58 : 0.85;
-
+  fireTimer = characterIndex === 3 ? 0.58 : characterIndex === 4 ? 1.2 : 0.85;
   if (characterIndex === 0) throwSkillBlade("trident", charge);
   else if (characterIndex === 1) throwSkillBlade("boomerang", charge);
   else if (characterIndex === 2) throwSkillBlade("homing", charge);
   else if (characterIndex === 3) startSpearDash(charge);
-  else if (characterIndex === 4) throwSkillBlade("homing", charge);
+  else if (characterIndex === 4) throwSkillBlade("missile", charge);
+  else deployShieldWall("self");
 }
 
 function updateChargeBar() {
@@ -1000,7 +1022,7 @@ function startSpearDash(charge) {
   spearDashTimer = 1.05;
   spearDashCharge = charge;
   spearDashHits.clear();
-  flashMessage("Spear dash window");
+  flashMessage("Piercing dash window");
 }
 
 function getBlockingObstacles(mode = "shot") {
@@ -1016,7 +1038,7 @@ function deployShieldWall(owner = "self", remoteData = null) {
   if (!started && owner === "self") return;
   if (owner === "self" && characterIndex !== WALL_CHARACTER_INDEX) return;
   if (owner === "self" && wallSkillCooldown > 0) {
-  flashMessage(`Wall skill cooldown ${wallSkillCooldown.toFixed(1)}s`);
+    flashMessage(`Wall skill cooldown ${wallSkillCooldown.toFixed(1)}s`);
     return;
   }
   const dir = remoteData?.dir ? new THREE.Vector3(remoteData.dir.x || 0, 0, remoteData.dir.z || -1) : getViewMoveAxes().forward.clone();
@@ -1055,7 +1077,7 @@ function deployShieldWall(owner = "self", remoteData = null) {
 
   if (owner === "self") {
     wallSkillCooldown = WALL_COOLDOWN;
-    flashMessage("Guardian 墙已放置：自己可穿，敌人和敌方子弹会被挡住");
+    flashMessage("Guardian wall placed: allies pass through, enemies and enemy shots are blocked");
     sendSocket({
       type: "action",
       action: "shieldWall",
@@ -1103,7 +1125,7 @@ function updateSpearDash(dt) {
     if (throughDot < 0.15) continue;
     const damage = Math.round(clamp(8 + speedRatio * 24 + spearDashCharge * 18, 10, 50));
     spearDashHits.add(bot);
-    damageBot(bot, damage, `长矛冲刺 x${speedRatio.toFixed(1)}`);
+    damageBot(bot, damage, `Piercing dash x${speedRatio.toFixed(1)}`);
     showHitmarker();
     shakeTimer = Math.max(shakeTimer, 0.12);
     shakePower = Math.max(shakePower, 0.06);
@@ -1138,15 +1160,20 @@ function throwSkillBlade(type, charge) {
     side: getViewMoveAxes().right,
     damage: Math.round(clamp(18 + charge * 32, 18, 50))
   };
+  if (type === "missile") {
+    projectile.life = 4.2 + charge * 1.6;
+    projectile.velocity.copy(forward).multiplyScalar(8.5 + charge * 5.5);
+    projectile.damage = Math.round(clamp(24 + charge * 36, 28, 60));
+  }
   projectile.mesh.position.copy(projectile.position);
   scene.add(projectile.mesh);
   skillProjectiles.push(projectile);
-  flashMessage(type === "spear" ? `疾速长矛 x${(1 + speedBonus).toFixed(1)}` : KNIFE_SKILLS[characterIndex]);
+  flashMessage(type === "spear" ? `Piercing dash x${(1 + speedBonus).toFixed(1)}` : KNIFE_SKILLS[characterIndex]);
 }
 
 function buildSkillBladeMesh(type) {
   const group = new THREE.Group();
-  const bladeMat = new THREE.MeshStandardMaterial({ color: type === "homing" ? 0x8fffd5 : type === "boomerang" ? 0xffd86f : 0xf5f7ff, metalness: 0.55, roughness: 0.2, emissive: type === "homing" ? 0x0b4f34 : 0x111111, emissiveIntensity: 0.25 });
+  const bladeMat = new THREE.MeshStandardMaterial({ color: type === "homing" ? 0x8fffd5 : type === "boomerang" ? 0xffd86f : type === "missile" ? 0xa9dcff : 0xf5f7ff, metalness: 0.55, roughness: 0.2, emissive: type === "homing" ? 0x0b4f34 : type === "missile" ? 0x0d3654 : 0x111111, emissiveIntensity: 0.25 });
   const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.45, roughness: 0.18 });
   const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a2a17, roughness: 0.72 });
   const blade = makeKnifeBladeMesh(type === "spear" ? 0.18 : 0.14, type === "spear" ? 1.25 : 0.82, bladeMat);
@@ -1207,7 +1234,7 @@ function reload() {
   const mag = inventory[weaponIndex];
   if (reloadTimer > 0 || mag.ammo === weapon.mag || mag.reserve <= 0) return;
   reloadTimer = weapon.reload;
-  flashMessage("换弹中");
+  flashMessage("Reloading");
 }
 
 function finishReload() {
@@ -1239,7 +1266,7 @@ function getAimSpreadMultiplier(weapon) {
 function toggleProne() {
   if (!started || paused || sliding) return;
   prone = !prone;
-  flashMessage(prone ? "趴下" : "起身");
+  flashMessage(prone ? "Prone" : "Stand");
 }
 
 function startSlide() {
@@ -1250,7 +1277,7 @@ function startSlide() {
   slideCooldown = 0.9;
   slideDirection.copy(getViewMoveAxes().forward).normalize();
   player.verticalVelocity = Math.min(player.verticalVelocity, -0.4);
-  flashMessage("滑铲");
+  flashMessage("Slide");
 }
 
 function updateSlide(dt) {
@@ -1268,7 +1295,7 @@ function applyFallDamage(drop) {
   if (floors < 2.6) return;
   const damage = Math.round((floors - 2.2) * 18 + Math.max(0, floors - 3) * 16);
   applyDamage(damage);
-  flashMessage(`坠落伤害 -${damage} HP`);
+  flashMessage(`Fall damage -${damage} HP`);
 }
 
 function getAimDirection(spread) {
@@ -1362,8 +1389,8 @@ function hasLineOfSight3d(from, to) {
 function getHitDamageScale(hit) {
   if (!hit?.bot || !hit.point) return { multiplier: 1, label: "" };
   const localY = hit.point.y - hit.bot.group.position.y;
-  if (localY > 0.58) return { multiplier: 2.25, label: "爆头" };
-  if (localY < -0.45) return { multiplier: 0.75, label: "腿部" };
+  if (localY > 0.58) return { multiplier: 2.25, label: "Headshot" };
+  if (localY < -0.45) return { multiplier: 0.75, label: "Leg hit" };
   return { multiplier: 1, label: "" };
 }
 
@@ -1385,7 +1412,7 @@ function damageBot(bot, damage, label = "") {
   bot.healthbar.classList.add("hidden");
   kills += 1;
   dropPickup(bot.group.position);
-  flashMessage("击倒目标");
+  flashMessage("Target down");
 }
 
 function applyDamage(amount) {
@@ -1400,7 +1427,7 @@ function applyDamage(amount) {
   hurtTimer = 0.55;
   shakeTimer = Math.max(shakeTimer, 0.18);
   shakePower = Math.max(shakePower, 0.08);
-  flashMessage(hp <= 0 ? "被击倒了，正在重生" : `-${damage} HP`);
+  flashMessage(hp <= 0 ? "Downed. Respawning" : `-${damage} HP`);
   if (hp <= 0) {
     sendSocket({ type: "down" });
     respawnPlayer();
@@ -1519,13 +1546,13 @@ function collectPickup(pickup) {
       if (WEAPONS[i].melee) continue;
       inventory[i].reserve += Math.ceil(WEAPONS[i].mag * 0.7);
     }
-    flashMessage("获得弹药");
+    flashMessage("Ammo picked up");
   } else if (pickup.userData.type === "armor") {
     armor = Math.min(100, armor + 35);
-    flashMessage("获得护甲");
+    flashMessage("Armor picked up");
   } else {
     hp = Math.min(100, hp + 30);
-    flashMessage("恢复生命");
+    flashMessage("Health restored");
   }
 }
 
@@ -1560,7 +1587,7 @@ function toggleDoor(door) {
     door.position.copy(door.userData.closedPosition);
     door.rotation.y = door.userData.closedRotationY;
   }
-  flashMessage(opening ? "开门" : "关门");
+  flashMessage(opening ? "Door opened" : "Door closed");
 }
 
 function lootCrate(crate) {
@@ -1572,13 +1599,13 @@ function lootCrate(crate) {
       if (WEAPONS[i].melee) continue;
       inventory[i].reserve += Math.ceil(WEAPONS[i].mag * 0.85);
     }
-    flashMessage("搜刮: 弹药");
+    flashMessage("Loot: ammo");
   } else if (roll < 0.74) {
     armor = Math.min(100, armor + 45);
-    flashMessage("搜刮: 护甲");
+    flashMessage("Loot: armor");
   } else {
     hp = Math.min(100, hp + 35);
-    flashMessage("搜刮: 医疗包");
+    flashMessage("Loot: med kit");
   }
 }
 
@@ -1586,8 +1613,8 @@ function updateWave() {
   if (bots.some(bot => bot.group.visible || bot.deadTimer > 0 && bot.deadTimer < 900)) return;
   const reward = awardMatchRewards();
   wave += 1;
-  showWaveAnnounce(`第 ${wave} 波人机到来`);
-  flashMessage(`第 ${wave} 波 | +${reward.trophies} 奖杯 +${reward.coins} 金币`);
+  showWaveAnnounce(`Wave ${wave} bots incoming`);
+  flashMessage(`Wave ${wave} | +${reward.trophies} trophies +${reward.coins} coins`);
   for (let i = bots.length - 1; i >= 0; i--) {
     bots[i].healthbar.remove();
     scene.remove(bots[i].group);
@@ -1781,6 +1808,17 @@ function updateSkillProjectiles(dt) {
       projectile.returning = projectile.age > 0.35;
     }
 
+    if (projectile.type === "missile") {
+      if (keys.has("Space")) {
+        const steer = getAimDirection(0);
+        if (viewMode === "2d") steer.y = 0;
+        steer.normalize();
+        const speed = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint ? 18 : 10 + projectile.charge * 6;
+        projectile.velocity.lerp(steer.multiplyScalar(speed), Math.min(1, dt * 4.2));
+      }
+      if (projectile.age > projectile.life) projectile.returning = true;
+    }
+
     if (projectile.type === "spear" && projectile.age > projectile.life) projectile.returning = true;
 
     if (projectile.returning) {
@@ -1800,9 +1838,9 @@ function updateSkillProjectiles(dt) {
     if (projectile.velocity.lengthSq() > 0.01) {
       aimProjectileMesh(projectile.mesh, projectile.velocity);
     }
-    const spin = projectile.type === "trident" || projectile.type === "homing" ? 0 : projectile.type === "boomerang" ? 8 : 5;
+    const spin = projectile.type === "trident" || projectile.type === "homing" || projectile.type === "missile" ? 0 : projectile.type === "boomerang" ? 8 : 5;
     projectile.mesh.rotateZ(dt * spin);
-    addTracer(projectile.position.clone(), projectile.position.clone().addScaledVector(projectile.velocity, -0.045), projectile.type === "homing" ? 0x65ffd0 : projectile.type === "boomerang" ? 0xffd76a : 0xdfeaff);
+    addTracer(projectile.position.clone(), projectile.position.clone().addScaledVector(projectile.velocity, -0.045), projectile.type === "homing" ? 0x65ffd0 : projectile.type === "boomerang" ? 0xffd76a : projectile.type === "missile" ? 0x9fd3ff : 0xdfeaff);
     hitSkillWorld(projectile);
     hitSkillProjectile(projectile);
   }
@@ -1822,7 +1860,7 @@ function hitSkillProjectile(projectile) {
     if (!bot.group.visible || bot.deadTimer > 0 || projectile.hitBots.has(bot)) continue;
     if (bot.group.position.distanceTo(projectile.position) > 1.35) continue;
     projectile.hitBots.add(bot);
-    damageBot(bot, projectile.damage, projectile.type === "homing" ? "追踪" : projectile.type === "spear" ? "长矛" : "飞刀");
+    damageBot(bot, projectile.damage, projectile.type === "homing" ? "Homing" : projectile.type === "missile" ? "Missile knife" : projectile.type === "spear" ? "Spear" : "Knife");
     showHitmarker();
     projectile.returning = true;
     if (projectile.type !== "boomerang") break;
@@ -2288,7 +2326,7 @@ function reshapeGun() {
 function cycleGunSkin() {
   gunSkinIndex = (gunSkinIndex + 1) % GUN_SKINS.length;
   applyGunSkin();
-  flashMessage(`枪皮: ${GUN_SKINS[gunSkinIndex].name}`);
+  flashMessage(`Gun skin: ${GUN_SKINS[gunSkinIndex].name}`);
 }
 
 function applyGunSkin() {
@@ -2536,7 +2574,7 @@ function addPubgExpansion() {
     else addHouseSupplies(x, z, 12, 12);
     remember(x, z, 24);
   }
-  flashMessage("吃鸡地图已加载");
+  flashMessage("Battle map loaded");
 }
 
 function addLowHill(x, z, radius, height) {
@@ -3147,12 +3185,12 @@ function connectSocket() {
   try {
     multiplayer.socket = new WebSocket(socketUrl());
   } catch (error) {
-    updateRoomStatus("连接服务器失败。检查 config.js 里的 Render WebSocket 地址。", "bad");
+    updateRoomStatus("Server connection failed. Check the Render WebSocket URL in config.js.", "bad");
     return;
   }
   multiplayer.socket.addEventListener("open", () => {
     multiplayer.connected = true;
-    updateRoomStatus("已连接服务器，可以创建或加入房间。", "ok");
+    updateRoomStatus("Server connected. You can create or join a room.", "ok");
     if (multiplayer.pending) {
       const pending = multiplayer.pending;
       multiplayer.pending = null;
@@ -3162,9 +3200,9 @@ function connectSocket() {
   multiplayer.socket.addEventListener("close", () => {
     multiplayer.connected = false;
     multiplayer.opponentReady = false;
-    updateRoomStatus("服务器连接断开。刷新页面；如果还是不行，Render 服务器可能在启动中。", "bad");
+    updateRoomStatus("Server disconnected. Refresh the page; Render may still be waking up.", "bad");
   });
-  multiplayer.socket.addEventListener("error", () => updateRoomStatus("WebSocket 连接失败：GitHub Pages 版本要先在 config.js 填 Render 地址。", "bad"));
+  multiplayer.socket.addEventListener("error", () => updateRoomStatus("WebSocket failed. The GitHub Pages version needs the Render URL in config.js.", "bad"));
   multiplayer.socket.addEventListener("message", event => {
     try { handleSocketMessage(JSON.parse(event.data)); }
     catch (error) { console.warn("Bad socket message", error); }
@@ -3181,19 +3219,19 @@ function createRoom() {
   const payload = { type: "create", characterIndex, gunSkinIndex };
   connectSocket();
   if (!sendSocket(payload)) multiplayer.pending = payload;
-  updateRoomStatus("正在创建房间……", "warn");
+  updateRoomStatus("Creating room...", "warn");
 }
 
 function joinRoom(code) {
   const clean = String(code).replace(/\D/g, "").slice(0, 6);
   if (!clean) {
-    updateRoomStatus("请输入朋友给你的房间号码。", "bad");
+    updateRoomStatus("Enter the room code from your friend.", "bad");
     return;
   }
   const payload = { type: "join", roomCode: clean, characterIndex, gunSkinIndex };
   connectSocket();
   if (!sendSocket(payload)) multiplayer.pending = payload;
-  updateRoomStatus(`正在加入房间 ${clean}……`, "warn");
+  updateRoomStatus(`Joining room ${clean}...`, "warn");
 }
 
 function handleSocketMessage(data) {
@@ -3204,7 +3242,7 @@ function handleSocketMessage(data) {
     multiplayer.players = data.players || {};
     multiplayer.opponentReady = false;
     if (els.roomCodeInput) els.roomCodeInput.value = data.roomCode;
-    updateRoomStatus(`房间号：${data.roomCode}。把这个号码发给朋友。`, "ok");
+    updateRoomStatus(`Room code: ${data.roomCode}. Send this code to your friend.`, "ok");
     return;
   }
   if (data.type === "joined" || data.type === "roomUpdate") {
@@ -3215,7 +3253,7 @@ function handleSocketMessage(data) {
     multiplayer.opponentReady = Object.keys(multiplayer.players).length >= 2;
     ensureRemoteBot();
     updateRemoteFromPlayers();
-    updateRoomStatus(multiplayer.opponentReady ? `房间 ${multiplayer.roomCode} 已满，可以开始 1V1。` : `房间 ${multiplayer.roomCode}：等待另一个玩家。`, multiplayer.opponentReady ? "ok" : "warn");
+    updateRoomStatus(multiplayer.opponentReady ? `Room ${multiplayer.roomCode} is full. Start 1V1 when ready.` : `Room ${multiplayer.roomCode}: waiting for opponent.`, multiplayer.opponentReady ? "ok" : "warn");
     return;
   }
   if (data.type === "state") {
@@ -3233,12 +3271,12 @@ function handleSocketMessage(data) {
   }
   if (data.type === "score") {
     kills = data.kills?.[multiplayer.playerId] || kills;
-    flashMessage(data.text || "对手被击倒");
+    flashMessage(data.text || "Opponent down");
     return;
   }
   if (data.type === "error") {
-    updateRoomStatus(data.message || "房间错误", "bad");
-    flashMessage(data.message || "房间错误");
+    updateRoomStatus(data.message || "Room error", "bad");
+    flashMessage(data.message || "Room error");
   }
 }
 
@@ -3336,7 +3374,7 @@ function updateMultiplayer(dt) {
   updateRemoteFromPlayers();
 }
 
-connectSocket();
+updateRoomStatus("Choose Solo Practice, or create/join a room for Online 1V1.", "warn");
 
 function flashMessage(text) {
   els.message.textContent = text;
