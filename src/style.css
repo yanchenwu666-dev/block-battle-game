@@ -495,6 +495,9 @@ body.view-2d #topdown2d {
 }
 
 #viewButton {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  top: max(16px, env(safe-area-inset-top));
   width: 68px;
   height: 44px;
   background: rgba(18, 21, 23, 0.72);
@@ -1003,8 +1006,32 @@ body.scope-sniper .scope-glass::after {
 .room-status.warn { color: #ffe98a; }
 .room-status.bad { color: #ffb0b0; }
 
+.touch-layout-panel {
+  gap: 12px;
+}
+
+.touch-layout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.touch-layout-grid label {
+  display: grid;
+  gap: 6px;
+  color: rgba(232, 239, 255, 0.78);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.touch-layout-grid input {
+  width: 100%;
+  accent-color: #ffcf4f;
+}
+
 @media (max-width: 720px) {
   .room-actions { grid-template-columns: 1fr; }
+  .touch-layout-grid { grid-template-columns: 1fr; }
 }
 
 
@@ -1024,6 +1051,7 @@ body.scope-sniper .scope-glass::after {
 .touch-stick,
 .mobile-actions,
 #mobileWeaponBar,
+#mobileView,
 #lookPad {
   pointer-events: auto;
 }
@@ -1032,15 +1060,15 @@ body.scope-sniper .scope-glass::after {
   position: fixed;
   right: 0;
   top: 0;
-  width: 58vw;
+  width: var(--touch-look-width, 58vw);
   height: 100vh;
   background: transparent;
 }
 
 .touch-stick {
   position: fixed;
-  left: max(18px, env(safe-area-inset-left));
-  bottom: max(88px, calc(70px + env(safe-area-inset-bottom)));
+  left: max(var(--touch-stick-x, 18px), env(safe-area-inset-left));
+  bottom: max(var(--touch-stick-y, 88px), env(safe-area-inset-bottom));
   width: 154px;
   height: 154px;
   display: grid;
@@ -1086,14 +1114,66 @@ body.scope-sniper .scope-glass::after {
 
 .mobile-actions {
   position: fixed;
-  right: max(12px, env(safe-area-inset-right));
-  bottom: max(76px, calc(62px + env(safe-area-inset-bottom)));
+  right: max(var(--touch-actions-x, 12px), env(safe-area-inset-right));
+  bottom: max(var(--touch-actions-y, 76px), env(safe-area-inset-bottom));
   width: min(45vw, 360px);
   height: 245px;
+  transform: scale(var(--touch-actions-scale, 1));
+  transform-origin: right bottom;
+}
+
+.mobile-view-btn {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  top: max(14px, env(safe-area-inset-top));
+  z-index: 8;
+  width: 62px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,.38);
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(18, 24, 46, .68);
+  box-shadow: 0 8px 20px rgba(0,0,0,.28), inset 0 -3px 0 rgba(0,0,0,.2);
+  font: 900 15px/1 Inter, ui-sans-serif, system-ui, "Microsoft YaHei", sans-serif;
+  backdrop-filter: blur(6px);
+}
+
+.mobile-view-btn:active {
+  transform: translateY(2px) scale(.98);
+  background: rgba(255, 217, 90, .78);
+  color: #301b00;
+}
+
+#grenadeCancel {
+  position: fixed;
+  left: 50%;
+  bottom: max(88px, calc(78px + env(safe-area-inset-bottom)));
+  z-index: 9;
+  display: none;
+  place-items: center;
+  width: 112px;
+  height: 72px;
+  transform: translateX(-50%);
+  border: 2px solid rgba(255,255,255,.42);
+  border-radius: 18px;
+  color: rgba(255,255,255,.86);
+  background: rgba(38, 42, 54, .74);
+  box-shadow: 0 10px 26px rgba(0,0,0,.34);
+  font: 900 13px/1.1 Inter, ui-sans-serif, system-ui, "Microsoft YaHei", sans-serif;
+  text-align: center;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+#grenadeCancel.cancel-active {
+  border-color: rgba(255, 96, 96, .95);
+  background: rgba(110, 30, 30, .86);
+  color: #fff;
 }
 
 .mobile-btn {
   position: absolute;
+  overflow: hidden;
   min-width: 64px;
   min-height: 54px;
   border: 1px solid rgba(255,255,255,.3);
@@ -1137,6 +1217,59 @@ body.scope-sniper .scope-glass::after {
 #mobileProne { right: 90px; bottom: 178px; }
 #mobileReload { right: 178px; bottom: 126px; }
 #mobileInteract { right: 176px; bottom: 62px; }
+#mobileGrenade {
+  right: 186px;
+  bottom: 0;
+  min-width: 82px;
+  min-height: 56px;
+  border-color: rgba(255, 213, 91, .55);
+  background: rgba(78, 62, 28, .68);
+}
+#mobileExtract {
+  right: 252px;
+  bottom: 64px;
+  min-width: 76px;
+  min-height: 56px;
+  border-color: rgba(255, 210, 92, .55);
+}
+
+#mobileExtract::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--extract-progress, 0%);
+  background: rgba(255, 210, 92, .48);
+  pointer-events: none;
+}
+
+#mobileExtract.extracting {
+  color: #fff4c7;
+  background: rgba(84, 52, 20, .72);
+}
+
+#mobileExtract {
+  --extract-progress: 0%;
+}
+
+body.grenade-aiming .mobile-actions .mobile-btn:not(#mobileGrenade),
+body.grenade-aiming #mobileWeaponBar,
+body.grenade-aiming #mobileView {
+  display: none;
+}
+
+body.grenade-aiming #grenadeCancel {
+  display: grid;
+}
+
+body.grenade-aiming #mobileGrenade {
+  right: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(50%);
+  width: 108px;
+  height: 62px;
+  background: rgba(255, 200, 76, .72);
+  color: #2c1a00;
+}
 
 #mobileWeaponBar {
   position: fixed;
@@ -1209,8 +1342,8 @@ body.touch-device #hud {
 @media (max-width: 720px) {
   .lobby { grid-template-columns: 1fr; }
   .hero-panel { min-height: auto; }
-  .touch-stick { left: 8px; bottom: 70px; transform: scale(.88); transform-origin: left bottom; }
-  .mobile-actions { right: 4px; bottom: 54px; transform: scale(.86); transform-origin: right bottom; }
+  .touch-stick { transform: scale(.88); transform-origin: left bottom; }
+  .mobile-actions { transform: scale(calc(var(--touch-actions-scale, 1) * .86)); transform-origin: right bottom; }
   #mobileWeaponBar { transform: translateX(-50%) scale(.9); transform-origin: center bottom; }
 }
 

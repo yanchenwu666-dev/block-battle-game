@@ -43,11 +43,22 @@ const els = {
   lookPad: document.querySelector("#lookPad"),
   mobileFire: document.querySelector("#mobileFire"),
   mobileAim: document.querySelector("#mobileAim"),
+  mobileGrenade: document.querySelector("#mobileGrenade"),
+  grenadeCancel: document.querySelector("#grenadeCancel"),
   mobileJump: document.querySelector("#mobileJump"),
   mobileSlide: document.querySelector("#mobileSlide"),
   mobileProne: document.querySelector("#mobileProne"),
   mobileReload: document.querySelector("#mobileReload"),
-  mobileInteract: document.querySelector("#mobileInteract")
+  mobileInteract: document.querySelector("#mobileInteract"),
+  mobileExtract: document.querySelector("#mobileExtract"),
+  mobileView: document.querySelector("#mobileView"),
+  touchStickX: document.querySelector("#touchStickX"),
+  touchStickY: document.querySelector("#touchStickY"),
+  touchActionsX: document.querySelector("#touchActionsX"),
+  touchActionsY: document.querySelector("#touchActionsY"),
+  touchScale: document.querySelector("#touchScale"),
+  touchLookWidth: document.querySelector("#touchLookWidth"),
+  touchLayoutReset: document.querySelector("#touchLayoutReset")
 };
 
 const RADAR_RANGE = 180;
@@ -78,7 +89,7 @@ const CHARACTERS = [
   { name: "Volt", className: "volt", role: "Fast runner and flank picker", hp: 90, speed: 10.4, skill: "Returning Blade", skin: 0xe0aa78, shirt: 0xff9d3f, pants: 0x46301c, hair: 0x53320a, armor: 0x5b451f, token: "linear-gradient(135deg,#ffe15a,#ff8b2f)" },
   { name: "Iris", className: "iris", role: "Precision fighter", hp: 95, speed: 9.8, skill: "Homing Blade", skin: 0xf0bf98, shirt: 0x24a7b8, pants: 0x16394a, hair: 0x0d5362, armor: 0x2d6068, token: "linear-gradient(135deg,#62ffd7,#168da0)" },
   { name: "Brick", className: "brick", role: "Heavy close-range bruiser", hp: 120, speed: 8.8, skill: "Spear Dash", skin: 0xc98b65, shirt: 0xb22747, pants: 0x2c2530, hair: 0x25151d, armor: 0x5b2636, token: "linear-gradient(135deg,#ff7d86,#b22747)" },
-  { name: "Missile", className: "missile", role: "Remote flying knife controller", hp: 95, speed: 9.2, skill: "Controllable Missile Blade", skin: 0xd8a274, shirt: 0x516a78, pants: 0x18212d, hair: 0x1d1713, armor: 0x7b8d96, token: "linear-gradient(135deg,#c5f1ff,#667985)" },
+  { name: "Echo", className: "echo", role: "Remote blade controller", hp: 92, speed: 9.6, skill: "Echo Blade", skin: 0xe2b18a, shirt: 0x5d45a8, pants: 0x20233c, hair: 0x182033, armor: 0x4d5b72, token: "linear-gradient(135deg,#b78cff,#4fdcff)" },
   { name: "Guardian", className: "guardian", role: "Wall builder / defender", hp: 105, speed: 9.1, skill: "Team Wall", skin: 0xd9a77d, shirt: 0x7357ff, pants: 0x1f2744, hair: 0x23223a, armor: 0x6f7cff, token: "linear-gradient(135deg,#9d8cff,#4d63ff)" }
 ];
 const WEAPONS = [
@@ -93,7 +104,7 @@ const KNIFE_SKILLS = [
   "Returning Blade",
   "Homing Blade",
   "Spear Dash",
-  "Controllable Missile Blade",
+  "Echo Blade",
   "Team Wall"
 ];
 const MAPS = [
@@ -101,6 +112,14 @@ const MAPS = [
   { key: "duel", name: "Online 1V1", desc: "Create or join a room, wait for an opponent, then fight a real 1V1 match." }
 ];
 const SAVE_KEY = "block-battle-save-v1";
+const TOUCH_LAYOUT_DEFAULTS = {
+  stickX: 18,
+  stickY: 88,
+  actionsX: 12,
+  actionsY: 76,
+  scale: 100,
+  lookWidth: 58
+};
 
 let started = false;
 let viewMode = "3d";
@@ -144,21 +163,33 @@ let knifeCharging = false;
 let spearDashTimer = 0;
 let spearDashCharge = 0;
 let wallSkillCooldown = 0;
+let extractHoldTimer = 0;
+let extracting = false;
 const WALL_CHARACTER_INDEX = 5;
 const WALL_WIDTH = 6.8;
 const WALL_HEIGHT = 3.3;
 const WALL_THICKNESS = 0.34;
 const WALL_LIFETIME = 14;
 const WALL_COOLDOWN = 6;
+const EXPLOSION_KNOCK_RADIUS = 3.7;
+const EXPLOSION_KNOCK_DISTANCE = 1.18;
+const EXTRACT_HOLD_TIME = 3;
+const GRENADE_COOLDOWN = 4.5;
 const spearDashHits = new Set();
 let lastWTap = 0;
 let paused = false;
+let grenadeCooldown = 0;
+let grenadeAiming = false;
+let grenadeTouchId = null;
+let grenadeCanceled = false;
 let lastFrame = performance.now();
 const mouse = { x: innerWidth / 2, y: innerHeight / 2 };
 const mobileInput = {
   enabled: false,
   moveId: null,
   lookId: null,
+  lookLastX: 0,
+  lookLastY: 0,
   originX: 0,
   originY: 0,
   x: 0,
@@ -166,6 +197,7 @@ const mobileInput = {
   sprint: false,
   aimHeld: false
 };
+let touchLayout = { ...TOUCH_LAYOUT_DEFAULTS };
 
 const multiplayer = {
   socket: null,
@@ -244,12 +276,18 @@ scene.add(sun);
 els.play.addEventListener("click", startGame);
 els.createRoom?.addEventListener("click", createRoom);
 els.joinRoom?.addEventListener("click", () => joinRoom(els.roomCodeInput?.value || ""));
-els.viewButton.addEventListener("click", toggleView);
+els.viewButton.addEventListener("click", togglePersonView);
 loadProgress();
+initTouchLayoutControls();
 renderLobby();
 renderHotbar();
 initMobileControls();
 document.addEventListener("keydown", event => {
+  if (event.code === "Tab") {
+    event.preventDefault();
+    startExtractHold();
+    return;
+  }
   if (event.code === "F5" || event.code === "KeyK") {
     event.preventDefault();
     toggleView();
@@ -282,7 +320,14 @@ document.addEventListener("keydown", event => {
   }
   keys.add(event.code);
 });
-document.addEventListener("keyup", event => keys.delete(event.code));
+document.addEventListener("keyup", event => {
+  if (event.code === "Tab") {
+    event.preventDefault();
+    cancelExtractHold();
+    return;
+  }
+  keys.delete(event.code);
+});
 document.addEventListener("mousemove", event => {
   mouse.x = event.clientX;
   mouse.y = event.clientY;
@@ -299,10 +344,6 @@ document.addEventListener("mousedown", event => {
     shoot();
   }
   if (event.button === 2) {
-    if (characterIndex === WALL_CHARACTER_INDEX) {
-      deployShieldWall("self");
-      return;
-    }
     if (WEAPONS[weaponIndex].melee) {
       startKnifeSkill();
       return;
@@ -367,6 +408,41 @@ function initMobileControls() {
     mobileInput.sprint = false;
     if (els.moveKnob) els.moveKnob.style.transform = "translate(0,0)";
   };
+  const beginLook = touch => {
+    if (!touch || mobileInput.lookId !== null || touch.identifier === mobileInput.moveId) return;
+    mobileInput.lookId = touch.identifier;
+    mobileInput.lookLastX = touch.clientX;
+    mobileInput.lookLastY = touch.clientY;
+    mouse.x = touch.clientX;
+    mouse.y = touch.clientY;
+  };
+  const moveLook = touch => {
+    if (!touch || touch.identifier !== mobileInput.lookId) return;
+    const dx = touch.clientX - mobileInput.lookLastX;
+    const dy = touch.clientY - mobileInput.lookLastY;
+    mobileInput.lookLastX = touch.clientX;
+    mobileInput.lookLastY = touch.clientY;
+    mouse.x = touch.clientX;
+    mouse.y = touch.clientY;
+    if (!started || paused) return;
+    yaw -= dx * 0.0052;
+    if (viewMode !== "2d") pitch = clamp(pitch - dy * 0.0045, -1.56, 1.56);
+  };
+  const endLook = touches => {
+    if ([...touches].some(t => t.identifier === mobileInput.lookId)) mobileInput.lookId = null;
+  };
+
+  els.mobileControls.addEventListener("touchmove", event => {
+    if (mobileInput.lookId === null) return;
+    const touch = [...event.changedTouches].find(t => t.identifier === mobileInput.lookId);
+    if (!touch) return;
+    stop(event);
+    moveLook(touch);
+  }, { passive: false, capture: true });
+
+  ["touchend", "touchcancel"].forEach(type => {
+    els.mobileControls.addEventListener(type, event => endLook(event.changedTouches), { passive: true, capture: true });
+  });
 
   els.moveStick?.addEventListener("touchstart", event => {
     stop(event);
@@ -395,54 +471,75 @@ function initMobileControls() {
 
   els.lookPad?.addEventListener("touchstart", event => {
     stop(event);
-    const touch = event.changedTouches[0];
-    if (!touch || mobileInput.lookId !== null) return;
-    mobileInput.lookId = touch.identifier;
-    mouse.x = touch.clientX;
-    mouse.y = touch.clientY;
+    beginLook(event.changedTouches[0]);
   }, { passive: false });
 
   els.lookPad?.addEventListener("touchmove", event => {
     stop(event);
     const touch = [...event.changedTouches].find(t => t.identifier === mobileInput.lookId);
-    if (!touch) return;
-    const dx = touch.clientX - mouse.x;
-    const dy = touch.clientY - mouse.y;
-    mouse.x = touch.clientX;
-    mouse.y = touch.clientY;
-    if (!started || paused) return;
-    yaw -= dx * 0.0052;
-    if (viewMode !== "2d") pitch = clamp(pitch - dy * 0.0045, -1.56, 1.56);
+    moveLook(touch);
   }, { passive: false });
 
   ["touchend", "touchcancel"].forEach(type => {
     els.lookPad?.addEventListener(type, event => {
       stop(event);
-      if ([...event.changedTouches].some(t => t.identifier === mobileInput.lookId)) mobileInput.lookId = null;
+      endLook(event.changedTouches);
     }, { passive: false });
   });
 
   const bindHoldButton = (button, onDown, onUp) => {
     if (!button) return;
-    const down = event => { stop(event); button.classList.add("active"); onDown?.(); };
+    const down = event => {
+      stop(event);
+      button.classList.add("active");
+      onDown?.();
+      beginLook(event.changedTouches?.[0]);
+    };
     const up = event => { stop(event); button.classList.remove("active"); onUp?.(); };
     button.addEventListener("touchstart", down, { passive: false });
     button.addEventListener("touchend", up, { passive: false });
     button.addEventListener("touchcancel", up, { passive: false });
-    button.addEventListener("pointerdown", event => { if (event.pointerType !== "touch") return; down(event); });
-    button.addEventListener("pointerup", event => { if (event.pointerType !== "touch") return; up(event); });
   };
 
   bindHoldButton(els.mobileFire, () => { mouseDown = true; shoot(); }, () => { mouseDown = false; });
   bindHoldButton(els.mobileAim, () => {
     mobileInput.aimHeld = true;
-    if (characterIndex === WALL_CHARACTER_INDEX) deployShieldWall("self");
-    else if (WEAPONS[weaponIndex].melee) startKnifeSkill(); else if (!tryInteract() && viewMode !== "2d") ads = true;
+    if (WEAPONS[weaponIndex].melee) startKnifeSkill();
+    else if (!tryInteract() && viewMode !== "2d") ads = true;
   }, () => {
     mobileInput.aimHeld = false;
     if (knifeCharging) releaseKnifeCharge();
     ads = false;
   });
+
+  els.mobileGrenade?.addEventListener("touchstart", event => {
+    stop(event);
+    const touch = event.changedTouches[0];
+    if (!touch || !startGrenadeAim(touch.identifier)) return;
+    beginLook(touch);
+    updateGrenadeCancel(touch);
+  }, { passive: false });
+
+  els.mobileGrenade?.addEventListener("touchmove", event => {
+    stop(event);
+    const touch = [...event.changedTouches].find(t => t.identifier === grenadeTouchId);
+    if (touch) updateGrenadeCancel(touch);
+  }, { passive: false });
+
+  els.mobileGrenade?.addEventListener("touchend", event => {
+    stop(event);
+    const touch = [...event.changedTouches].find(t => t.identifier === grenadeTouchId);
+    if (touch) finishGrenadeAim();
+  }, { passive: false });
+
+  els.mobileGrenade?.addEventListener("touchcancel", event => {
+    stop(event);
+    const touch = [...event.changedTouches].find(t => t.identifier === grenadeTouchId);
+    if (touch) {
+      resetGrenadeAim();
+      flashMessage("Grenade canceled");
+    }
+  }, { passive: false });
 
   let lastTouchTap = 0;
   const bindTap = (button, action) => {
@@ -451,6 +548,7 @@ function initMobileControls() {
       stop(event);
       lastTouchTap = performance.now();
       action();
+      beginLook(event.changedTouches?.[0]);
       button.classList.add("active");
       setTimeout(() => button.classList.remove("active"), 120);
     }, { passive: false });
@@ -466,6 +564,8 @@ function initMobileControls() {
   bindTap(els.mobileProne, toggleProne);
   bindTap(els.mobileReload, reload);
   bindTap(els.mobileInteract, tryInteract);
+  bindTap(els.mobileView, togglePersonView);
+  bindHoldButton(els.mobileExtract, startExtractHold, cancelExtractHold);
 
   document.querySelectorAll(".mobile-weapon").forEach(button => {
     bindTap(button, () => {
@@ -479,6 +579,45 @@ function initMobileControls() {
   });
 
   addEventListener("orientationchange", () => setTimeout(resize, 250));
+}
+
+function initTouchLayoutControls() {
+  applyTouchLayout();
+  const bindings = [
+    [els.touchStickX, "stickX"],
+    [els.touchStickY, "stickY"],
+    [els.touchActionsX, "actionsX"],
+    [els.touchActionsY, "actionsY"],
+    [els.touchScale, "scale"],
+    [els.touchLookWidth, "lookWidth"]
+  ];
+  bindings.forEach(([input, key]) => {
+    if (!input) return;
+    input.value = String(touchLayout[key]);
+    input.addEventListener("input", () => {
+      touchLayout[key] = Number(input.value);
+      applyTouchLayout();
+      saveProgress();
+    });
+  });
+  els.touchLayoutReset?.addEventListener("click", () => {
+    touchLayout = { ...TOUCH_LAYOUT_DEFAULTS };
+    bindings.forEach(([input, key]) => {
+      if (input) input.value = String(touchLayout[key]);
+    });
+    applyTouchLayout();
+    saveProgress();
+  });
+}
+
+function applyTouchLayout() {
+  const root = document.documentElement;
+  root.style.setProperty("--touch-stick-x", `${touchLayout.stickX}px`);
+  root.style.setProperty("--touch-stick-y", `${touchLayout.stickY}px`);
+  root.style.setProperty("--touch-actions-x", `${touchLayout.actionsX}px`);
+  root.style.setProperty("--touch-actions-y", `${touchLayout.actionsY}px`);
+  root.style.setProperty("--touch-actions-scale", touchLayout.scale / 100);
+  root.style.setProperty("--touch-look-width", `${touchLayout.lookWidth}vw`);
 }
 
 function renderLobby() {
@@ -499,7 +638,8 @@ function saveProgress() {
       weaponLevels,
       gunSkinIndex,
       characterIndex,
-      selectedMap
+      selectedMap,
+      touchLayout
     }));
   } catch (error) {
     console.warn("saveProgress failed:", error);
@@ -519,6 +659,17 @@ function loadProgress() {
   if (Number.isFinite(data.gunSkinIndex)) gunSkinIndex = clamp(Math.floor(data.gunSkinIndex), 0, GUN_SKINS.length - 1);
   if (Number.isFinite(data.characterIndex)) characterIndex = clamp(Math.floor(data.characterIndex), 0, CHARACTERS.length - 1);
   if (MAPS.some(map => map.key === data.selectedMap)) selectedMap = data.selectedMap; else selectedMap = "duel";
+  if (data.touchLayout && typeof data.touchLayout === "object") {
+    touchLayout = {
+      stickX: clamp(Number(data.touchLayout.stickX) || TOUCH_LAYOUT_DEFAULTS.stickX, 0, 120),
+      stickY: clamp(Number(data.touchLayout.stickY) || TOUCH_LAYOUT_DEFAULTS.stickY, 58, 210),
+      actionsX: clamp(Number(data.touchLayout.actionsX) || TOUCH_LAYOUT_DEFAULTS.actionsX, 0, 120),
+      actionsY: clamp(Number(data.touchLayout.actionsY) || TOUCH_LAYOUT_DEFAULTS.actionsY, 44, 190),
+      scale: clamp(Number(data.touchLayout.scale) || TOUCH_LAYOUT_DEFAULTS.scale, 78, 116),
+      lookWidth: clamp(Number(data.touchLayout.lookWidth) || TOUCH_LAYOUT_DEFAULTS.lookWidth, 42, 76)
+    };
+    applyTouchLayout();
+  }
   applyGunSkin();
   } catch (error) {
     console.warn("loadProgress failed:", error);
@@ -655,6 +806,7 @@ function startGame() {
   inventory = WEAPONS.map(weapon => ({ ammo: weapon.mag, reserve: weapon.reserve }));
   reloadTimer = 0;
   fireTimer = 0;
+  grenadeCooldown = 0;
   mouseDown = false;
   ads = false;
   prone = false;
@@ -697,6 +849,7 @@ function animate(now) {
   lastFrame = now;
   requestAnimationFrame(animate);
   if (started && !paused) {
+    updateExtractHold(dt);
     updatePlayer(dt);
     if (selectedMap === "duel") updateMultiplayer(dt);
     if (selectedMap === "practice") updateBots(dt);
@@ -887,6 +1040,7 @@ function updateCombat(dt) {
   waveAnnounceTimer = Math.max(0, waveAnnounceTimer - dt);
   meleeSwingTimer = Math.max(0, meleeSwingTimer - dt);
   wallSkillCooldown = Math.max(0, wallSkillCooldown - dt);
+  grenadeCooldown = Math.max(0, grenadeCooldown - dt);
   updateShieldWalls(dt);
   if (knifeCharging) {
     knifeChargeTimer = Math.min(1.6, knifeChargeTimer + dt);
@@ -982,11 +1136,11 @@ function traceKnifeImpact(range) {
 }
 
 function startKnifeSkill() {
+  if (!started || paused || WEAPONS[weaponIndex].name !== "Knife" || fireTimer > 0) return;
   if (characterIndex === WALL_CHARACTER_INDEX) {
     deployShieldWall("self");
     return;
   }
-  if (!started || paused || WEAPONS[weaponIndex].name !== "Knife" || fireTimer > 0) return;
   knifeCharging = true;
   knifeChargeTimer = 0;
   flashMessage(KNIFE_SKILLS[characterIndex]);
@@ -1036,6 +1190,7 @@ function getBlockingObstacles(mode = "outgoingShot") {
 function deployShieldWall(owner = "self", remoteData = null) {
   if (!started && owner === "self") return;
   if (owner === "self" && characterIndex !== WALL_CHARACTER_INDEX) return;
+  if (owner === "self" && WEAPONS[weaponIndex].name !== "Knife") return;
   if (owner === "self" && wallSkillCooldown > 0) {
     flashMessage(`Wall skill cooldown ${wallSkillCooldown.toFixed(1)}s`);
     return;
@@ -1168,6 +1323,95 @@ function throwSkillBlade(type, charge) {
   scene.add(projectile.mesh);
   skillProjectiles.push(projectile);
   flashMessage(type === "spear" ? `Piercing dash x${(1 + speedBonus).toFixed(1)}` : KNIFE_SKILLS[characterIndex]);
+}
+
+function startGrenadeAim(touchId = null) {
+  if (!started || paused || grenadeAiming) return false;
+  if (grenadeCooldown > 0) {
+    flashMessage(`Grenade cooldown ${grenadeCooldown.toFixed(1)}s`);
+    return false;
+  }
+  grenadeAiming = true;
+  grenadeTouchId = touchId;
+  grenadeCanceled = false;
+  mouseDown = false;
+  ads = false;
+  document.body.classList.add("grenade-aiming");
+  els.mobileGrenade?.classList.add("active");
+  els.grenadeCancel?.classList.remove("cancel-active");
+  flashMessage("Release to throw grenade");
+  return true;
+}
+
+function updateGrenadeCancel(touch) {
+  if (!grenadeAiming || !touch || !els.grenadeCancel) return;
+  const rect = els.grenadeCancel.getBoundingClientRect();
+  grenadeCanceled = touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+  els.grenadeCancel.classList.toggle("cancel-active", grenadeCanceled);
+}
+
+function finishGrenadeAim() {
+  if (!grenadeAiming) return;
+  const canceled = grenadeCanceled;
+  resetGrenadeAim();
+  if (canceled) {
+    flashMessage("Grenade canceled");
+    return;
+  }
+  throwGrenade();
+}
+
+function resetGrenadeAim() {
+  grenadeAiming = false;
+  grenadeTouchId = null;
+  grenadeCanceled = false;
+  document.body.classList.remove("grenade-aiming");
+  els.mobileGrenade?.classList.remove("active");
+  els.grenadeCancel?.classList.remove("cancel-active");
+}
+
+function throwGrenade() {
+  if (!started || paused || grenadeCooldown > 0) return;
+  const forward = getAimDirection(0);
+  forward.normalize();
+  const origin = player.position.clone().add(new THREE.Vector3(0, 0.45, 0)).addScaledVector(forward, 0.75);
+  const projectile = {
+    type: "grenade",
+    mesh: buildGrenadeMesh(),
+    position: origin.clone(),
+    velocity: forward.clone().multiplyScalar(12.5).add(new THREE.Vector3(0, 5.6, 0)),
+    age: 0,
+    life: 2.6,
+    returning: false,
+    exploded: false,
+    hitBots: new Set(),
+    damage: 42
+  };
+  projectile.mesh.position.copy(projectile.position);
+  scene.add(projectile.mesh);
+  skillProjectiles.push(projectile);
+  grenadeCooldown = GRENADE_COOLDOWN;
+  flashMessage("Grenade thrown");
+}
+
+function buildGrenadeMesh() {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0x263827, roughness: 0.7, metalness: 0.25 })
+  );
+  const band = new THREE.Mesh(
+    new THREE.BoxGeometry(0.28, 0.07, 0.22),
+    new THREE.MeshStandardMaterial({ color: 0x121812, roughness: 0.65 })
+  );
+  const pin = new THREE.Mesh(
+    new THREE.TorusGeometry(0.1, 0.012, 6, 16),
+    new THREE.MeshStandardMaterial({ color: 0xc9c7b8, metalness: 0.8, roughness: 0.25 })
+  );
+  pin.position.set(0.12, 0.16, 0);
+  pin.rotation.y = Math.PI / 2;
+  group.add(body, band, pin);
+  return group;
 }
 
 function buildSkillBladeMesh(type) {
@@ -1313,10 +1557,7 @@ function getAimDirection(spread) {
 }
 
 function getShotOrigin() {
-  if (viewMode === "3d") {
-    return player.position.clone().add(new THREE.Vector3(0, player.eyeHeight + 0.35, 0));
-  }
-  if (viewMode === "third") {
+  if (viewMode === "3d" || viewMode === "third") {
     const origin = new THREE.Vector3();
     camera.getWorldPosition(origin);
     return origin;
@@ -1393,7 +1634,7 @@ function getHitDamageScale(hit) {
   return { multiplier: 1, label: "" };
 }
 
-function damageBot(bot, damage, label = "") {
+function damageBot(bot, damage, label = "", knock = null) {
   if (!bot || bot.deadTimer > 0) return;
   bot.hp -= damage;
   bot.healthbarTimer = 2.6;
@@ -1401,7 +1642,7 @@ function damageBot(bot, damage, label = "") {
   setTimeout(() => bot.group.scale.setScalar(1), 80);
   if (label) flashMessage(`${label} -${damage}`);
   if (bot.isRemote) {
-    sendSocket({ type: "hit", damage, label, weapon: WEAPONS[weaponIndex].name });
+    sendSocket({ type: "hit", damage, label, weapon: WEAPONS[weaponIndex].name, knock });
     showHitmarker();
     return;
   }
@@ -1815,10 +2056,24 @@ function updateSkillProjectiles(dt) {
         const speed = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint ? 18 : 10 + projectile.charge * 6;
         projectile.velocity.lerp(steer.multiplyScalar(speed), Math.min(1, dt * 4.2));
       }
-      if (projectile.age > projectile.life) projectile.returning = true;
+      if (projectile.age > projectile.life) explodeSkillProjectile(projectile);
+    }
+
+    if (projectile.type === "grenade") {
+      projectile.velocity.y -= GRAVITY * 0.82 * dt;
+      if (projectile.age > projectile.life) explodeSkillProjectile(projectile);
+      const floorY = getFloorHeight(projectile.position.x, projectile.position.z, projectile.position.y);
+      if (projectile.age > 0.16 && projectile.position.y <= floorY + 0.22) {
+        projectile.position.y = floorY + 0.22;
+        explodeSkillProjectile(projectile);
+      }
     }
 
     if (projectile.type === "spear" && projectile.age > projectile.life) projectile.returning = true;
+    if (projectile.exploded) {
+      removeSkillProjectile(projectile, i);
+      continue;
+    }
 
     if (projectile.returning) {
       const home = player.position.clone().add(new THREE.Vector3(0, 0.75, 0)).sub(projectile.position);
@@ -1835,13 +2090,21 @@ function updateSkillProjectiles(dt) {
     if (projectile.fixedY !== null) projectile.position.y = projectile.fixedY;
     projectile.mesh.position.copy(projectile.position);
     if (projectile.velocity.lengthSq() > 0.01) {
-      aimProjectileMesh(projectile.mesh, projectile.velocity);
+      aimProjectileMesh(projectile.mesh, projectile.velocity, projectile.type !== "grenade");
     }
     const spin = projectile.type === "trident" || projectile.type === "homing" || projectile.type === "missile" ? 0 : projectile.type === "boomerang" ? 8 : 5;
     projectile.mesh.rotateZ(dt * spin);
-    addTracer(projectile.position.clone(), projectile.position.clone().addScaledVector(projectile.velocity, -0.045), projectile.type === "homing" ? 0x65ffd0 : projectile.type === "boomerang" ? 0xffd76a : projectile.type === "missile" ? 0x9fd3ff : 0xdfeaff);
+    addTracer(projectile.position.clone(), projectile.position.clone().addScaledVector(projectile.velocity, -0.045), projectile.type === "homing" ? 0x65ffd0 : projectile.type === "boomerang" ? 0xffd76a : projectile.type === "missile" ? 0x9fd3ff : projectile.type === "grenade" ? 0xffcf5a : 0xdfeaff);
     hitSkillWorld(projectile);
+    if (projectile.exploded) {
+      removeSkillProjectile(projectile, i);
+      continue;
+    }
     hitSkillProjectile(projectile);
+    if (projectile.exploded) {
+      removeSkillProjectile(projectile, i);
+      continue;
+    }
   }
 }
 
@@ -1851,6 +2114,10 @@ function hitSkillWorld(projectile) {
   const hit = raycaster.intersectObjects(getBlockingObstacles("shot"), false).find(item => item.distance < 0.55);
   if (!hit) return;
   addImpactMark(hit.point, getHitNormal(hit), "slash");
+  if (projectile.type === "missile" || projectile.type === "grenade") {
+    explodeSkillProjectile(projectile, hit.point);
+    return;
+  }
   projectile.returning = true;
 }
 
@@ -1858,18 +2125,119 @@ function hitSkillProjectile(projectile) {
   for (const bot of bots) {
     if (!bot.group.visible || bot.deadTimer > 0 || projectile.hitBots.has(bot)) continue;
     if (bot.group.position.distanceTo(projectile.position) > 1.35) continue;
+    if (projectile.type === "grenade") {
+      explodeSkillProjectile(projectile);
+      break;
+    }
     projectile.hitBots.add(bot);
-    damageBot(bot, projectile.damage, projectile.type === "homing" ? "Homing" : projectile.type === "missile" ? "Missile knife" : projectile.type === "spear" ? "Spear" : "Knife");
+    const knock = projectile.type === "missile" ? getExplosionKnockPayload(projectile.position, bot.group.position, projectile.velocity) : null;
+    damageBot(bot, projectile.damage, projectile.type === "homing" ? "Homing" : projectile.type === "missile" ? "Echo blade" : projectile.type === "spear" ? "Spear" : "Knife", knock);
     showHitmarker();
+    if (projectile.type === "missile") {
+      explodeSkillProjectile(projectile);
+      break;
+    }
     projectile.returning = true;
     if (projectile.type !== "boomerang") break;
   }
 }
 
-function aimProjectileMesh(mesh, velocity) {
+function explodeSkillProjectile(projectile, point = null) {
+  if (!projectile || projectile.exploded) return;
+  projectile.exploded = true;
+  const center = (point || projectile.position).clone();
+  if (projectile.type === "grenade") applyExplosionDamage(center, projectile);
+  applyExplosionKnockback(center, projectile.velocity);
+  addImpactMark(center, new THREE.Vector3(0, 1, 0), "slash");
+  shakeTimer = Math.max(shakeTimer, 0.14);
+  shakePower = Math.max(shakePower, 0.07);
+}
+
+function removeSkillProjectile(projectile, index) {
+  scene.remove(projectile.mesh);
+  skillProjectiles.splice(index, 1);
+}
+
+function getExplosionKnockPayload(center, targetPosition, fallbackVelocity = null) {
+  const direction = targetPosition.clone().sub(center);
+  direction.y = 0;
+  if (direction.lengthSq() < 0.0001 && fallbackVelocity) {
+    direction.copy(fallbackVelocity);
+    direction.y = 0;
+  }
+  if (direction.lengthSq() < 0.0001) direction.set(0, 0, -1);
+  direction.normalize();
+  return {
+    x: direction.x,
+    z: direction.z,
+    power: EXPLOSION_KNOCK_DISTANCE
+  };
+}
+
+function applyExplosionKnockback(center, fallbackVelocity = null) {
+  for (const bot of bots) {
+    if (!bot.group.visible || bot.deadTimer > 0) continue;
+    const flatDistance = Math.hypot(bot.group.position.x - center.x, bot.group.position.z - center.z);
+    if (flatDistance > EXPLOSION_KNOCK_RADIUS || Math.abs(bot.group.position.y - center.y) > 3.2) continue;
+    const knock = getExplosionKnockPayload(center, bot.group.position, fallbackVelocity);
+    const amount = EXPLOSION_KNOCK_DISTANCE * (1 - flatDistance / EXPLOSION_KNOCK_RADIUS) + 0.28;
+    moveWithCollision(bot.group.position, knock.x * amount, knock.z * amount, 0.72, bot.group.position.y);
+    bot.verticalVelocity = Math.max(bot.verticalVelocity || 0, 1.2 * (1 - flatDistance / EXPLOSION_KNOCK_RADIUS));
+  }
+
+  const playerFoot = player.position.clone();
+  playerFoot.y -= player.eyeHeight;
+  const playerDistance = Math.hypot(player.position.x - center.x, player.position.z - center.z);
+  if (playerDistance <= EXPLOSION_KNOCK_RADIUS && Math.abs(playerFoot.y - center.y) <= 3.2) {
+    const knock = getExplosionKnockPayload(center, player.position, fallbackVelocity);
+    applyPlayerKnockback(knock, 1 - playerDistance / EXPLOSION_KNOCK_RADIUS);
+  }
+}
+
+function applyPlayerKnockback(knock, falloff = 1) {
+  const amount = (Number(knock?.power) || EXPLOSION_KNOCK_DISTANCE) * clamp(falloff, 0.18, 1);
+  const direction = new THREE.Vector3(Number(knock?.x) || 0, 0, Number(knock?.z) || 0);
+  if (direction.lengthSq() < 0.0001) return;
+  direction.normalize();
+  moveWithCollision(player.position, direction.x * amount, direction.z * amount, prone ? 0.5 : 0.62, player.position.y);
+  player.verticalVelocity = Math.max(player.verticalVelocity, 1.1 * clamp(falloff, 0.2, 1));
+}
+
+function applyExplosionDamage(center, projectile) {
+  const damageRadius = 4.1;
+  for (const bot of bots) {
+    if (!bot.group.visible || bot.deadTimer > 0 || projectile.hitBots.has(bot)) continue;
+    const flatDistance = Math.hypot(bot.group.position.x - center.x, bot.group.position.z - center.z);
+    if (flatDistance > damageRadius || Math.abs(bot.group.position.y - center.y) > 3.2) continue;
+    projectile.hitBots.add(bot);
+    const falloff = 1 - flatDistance / damageRadius;
+    const damage = Math.round(projectile.damage * clamp(falloff, 0.3, 1));
+    const knock = getExplosionKnockPayload(center, bot.group.position, projectile.velocity);
+    damageBot(bot, damage, "Grenade", knock);
+    showHitmarker();
+  }
+
+  const playerFootY = player.position.y - player.eyeHeight;
+  const playerDistance = Math.hypot(player.position.x - center.x, player.position.z - center.z);
+  if (playerDistance <= damageRadius && Math.abs(playerFootY - center.y) <= 3.2) {
+    const falloff = 1 - playerDistance / damageRadius;
+    applyDamage(Math.round(projectile.damage * 0.55 * clamp(falloff, 0.25, 1)));
+  }
+}
+
+function aimProjectileMesh(mesh, velocity, flatBlade = false) {
   const direction = velocity.clone();
   if (direction.lengthSq() <= 0.0001) return;
   direction.normalize();
+  if (flatBlade) {
+    const side = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), direction);
+    if (side.lengthSq() < 0.0001) side.set(1, 0, 0);
+    side.normalize();
+    const up = new THREE.Vector3().crossVectors(direction, side).normalize();
+    const matrix = new THREE.Matrix4().makeBasis(side, direction, up);
+    mesh.quaternion.setFromRotationMatrix(matrix);
+    return;
+  }
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), direction);
 }
 
@@ -1950,7 +2318,8 @@ function updateHud(dt = 0) {
   els.armor.textContent = `${armor} ARMOR`;
   els.weaponName.textContent = weapon.name;
   els.ammo.textContent = weapon.melee ? "MELEE" : reloadTimer > 0 ? "Reloading" : `${mag.ammo} / ${mag.reserve}`;
-  els.viewButton.textContent = viewMode === "third" ? "3P" : viewMode.toUpperCase();
+  els.viewButton.textContent = viewMode === "third" ? "3P" : viewMode === "2d" ? "2D" : "1P";
+  if (els.mobileView) els.mobileView.textContent = viewMode === "third" ? "3P" : "1P";
   document.body.classList.toggle("view-2d", viewMode === "2d");
   document.body.classList.toggle("view-third", viewMode === "third");
   document.body.classList.toggle("show-crosshair", viewMode !== "2d" && !ads);
@@ -2267,13 +2636,109 @@ function toggleView() {
   }
 }
 
+function togglePersonView() {
+  viewMode = viewMode === "third" ? "3d" : "third";
+  if (pitch <= -0.95) pitch = -0.12;
+  ads = false;
+  if (!mobileInput.enabled && started) renderer.domElement.requestPointerLock?.();
+}
+
 function togglePause() {
   if (!started) return;
   paused = !paused;
   mouseDown = false;
+  cancelExtractHold();
+  resetGrenadeAim();
   if (paused && document.pointerLockElement) document.exitPointerLock?.();
   if (!paused) renderer.domElement.requestPointerLock?.();
   if (paused) ads = false;
+}
+
+function startExtractHold() {
+  if (!started || paused || extracting) return;
+  extracting = true;
+  extractHoldTimer = 0;
+  mouseDown = false;
+  ads = false;
+  flashMessage("Hold EVAC 3s to extract");
+  updateExtractButton();
+}
+
+function cancelExtractHold() {
+  if (!extracting && extractHoldTimer <= 0) return;
+  extracting = false;
+  extractHoldTimer = 0;
+  updateExtractButton();
+}
+
+function updateExtractHold(dt) {
+  if (!extracting) return;
+  extractHoldTimer += dt;
+  updateExtractButton();
+  if (extractHoldTimer < EXTRACT_HOLD_TIME) return;
+  evacuateToLobby();
+}
+
+function updateExtractButton() {
+  const progress = clamp(extractHoldTimer / EXTRACT_HOLD_TIME, 0, 1);
+  els.mobileExtract?.style.setProperty("--extract-progress", `${Math.round(progress * 100)}%`);
+  els.mobileExtract?.classList.toggle("extracting", extracting);
+}
+
+function evacuateToLobby() {
+  started = false;
+  paused = false;
+  extracting = false;
+  extractHoldTimer = 0;
+  mouseDown = false;
+  ads = false;
+  knifeCharging = false;
+  resetGrenadeAim();
+  keys.clear();
+  mobileInput.moveId = null;
+  mobileInput.lookId = null;
+  mobileInput.x = 0;
+  mobileInput.z = 0;
+  mobileInput.sprint = false;
+  if (els.moveKnob) els.moveKnob.style.transform = "translate(0,0)";
+  cleanupMatchObjects();
+  respawnPlayer();
+  if (multiplayer.remoteBot) {
+    multiplayer.remoteBot.group.visible = false;
+    multiplayer.remoteBot.healthbar.classList.add("hidden");
+  }
+  els.menu.classList.remove("hidden");
+  document.exitPointerLock?.();
+  updateExtractButton();
+  renderLobby();
+  flashMessage("Extracted");
+}
+
+function cleanupMatchObjects() {
+  clearBots();
+  for (let i = skillProjectiles.length - 1; i >= 0; i--) {
+    scene.remove(skillProjectiles[i].mesh);
+    skillProjectiles.splice(i, 1);
+  }
+  for (let i = tracers.length - 1; i >= 0; i--) {
+    scene.remove(tracers[i]);
+    tracers.splice(i, 1);
+  }
+  for (let i = impactMarks.length - 1; i >= 0; i--) {
+    scene.remove(impactMarks[i]);
+    impactMarks.splice(i, 1);
+  }
+  for (let i = pickups.length - 1; i >= 0; i--) {
+    scene.remove(pickups[i]);
+    pickups.splice(i, 1);
+  }
+  for (let i = shieldWalls.length - 1; i >= 0; i--) {
+    const wall = shieldWalls[i];
+    scene.remove(wall);
+    const obstacleIndex = obstacles.indexOf(wall);
+    if (obstacleIndex >= 0) obstacles.splice(obstacleIndex, 1);
+    shieldWalls.splice(i, 1);
+  }
 }
 
 function switchWeapon(index) {
@@ -2340,6 +2805,7 @@ function respawnPlayer() {
   armor = 50;
   inventory = WEAPONS.map(weapon => ({ ammo: weapon.mag, reserve: weapon.reserve }));
   reloadTimer = 0;
+  grenadeCooldown = 0;
   mouseDown = false;
   ads = false;
   prone = false;
@@ -2350,6 +2816,7 @@ function respawnPlayer() {
   slideTimer = 0;
   slideDistance = 0;
   slideCooldown = 0;
+  resetGrenadeAim();
   player.eyeHeight = STAND_EYE_HEIGHT;
   player.position.set(0, STAND_EYE_HEIGHT, 16);
   player.verticalVelocity = 0;
@@ -3264,6 +3731,7 @@ function handleSocketMessage(data) {
   if (data.type === "hit") {
     if (isProtectedFromRemoteHit()) return;
     applyDamage(Number(data.damage) || 0);
+    if (data.knock) applyPlayerKnockback(data.knock, 1);
     return;
   }
   if (data.type === "action") {
