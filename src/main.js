@@ -33,6 +33,7 @@ const els = {
   armoryList: document.querySelector("#armoryList"),
   coins: document.querySelector("#coins"),
   lobbyTrophies: document.querySelector("#lobbyTrophies"),
+  playerNameInput: document.querySelector("#playerNameInput"),
   createRoom: document.querySelector("#createRoom"),
   joinRoom: document.querySelector("#joinRoom"),
   roomCodeInput: document.querySelector("#roomCodeInput"),
@@ -58,7 +59,13 @@ const els = {
   touchActionsY: document.querySelector("#touchActionsY"),
   touchScale: document.querySelector("#touchScale"),
   touchLookWidth: document.querySelector("#touchLookWidth"),
-  touchLayoutReset: document.querySelector("#touchLayoutReset")
+  touchLayoutReset: document.querySelector("#touchLayoutReset"),
+  touchCustomize: document.querySelector("#touchCustomize"),
+  touchEditor: document.querySelector("#touchEditor"),
+  touchEditorStage: document.querySelector("#touchEditorStage"),
+  touchEditorSave: document.querySelector("#touchEditorSave"),
+  touchEditorCancel: document.querySelector("#touchEditorCancel"),
+  touchEditorReset: document.querySelector("#touchEditorReset")
 };
 
 const RADAR_RANGE = 180;
@@ -109,7 +116,8 @@ const KNIFE_SKILLS = [
 ];
 const MAPS = [
   { key: "practice", name: "Solo Practice", desc: "Practice alone against AI bots. No room code or Render connection required." },
-  { key: "duel", name: "Online 1V1", desc: "Create or join a room, wait for an opponent, then fight a real 1V1 match." }
+  { key: "duel", name: "Online 1V1", desc: "Create or join a room, wait for an opponent, then fight a real 1V1 match." },
+  { key: "battleRoyale", name: "Duo Battle Royale", desc: "Create or join a two-player room, loot the arena, and fight until one player survives." }
 ];
 const SAVE_KEY = "block-battle-save-v1";
 const TOUCH_LAYOUT_DEFAULTS = {
@@ -120,6 +128,21 @@ const TOUCH_LAYOUT_DEFAULTS = {
   scale: 100,
   lookWidth: 58
 };
+const CUSTOM_TOUCH_KEYS = [
+  { key: "move", label: "MOVE", selector: "#moveStick" },
+  { key: "fire", label: "FIRE", selector: "#mobileFire" },
+  { key: "aim", label: "AIM", selector: "#mobileAim" },
+  { key: "grenade", label: "GRENADE", selector: "#mobileGrenade" },
+  { key: "jump", label: "JUMP", selector: "#mobileJump" },
+  { key: "slide", label: "SLIDE", selector: "#mobileSlide" },
+  { key: "prone", label: "PRONE", selector: "#mobileProne" },
+  { key: "reload", label: "RELOAD", selector: "#mobileReload" },
+  { key: "open", label: "OPEN", selector: "#mobileInteract" },
+  { key: "evac", label: "EVAC", selector: "#mobileExtract" },
+  { key: "view", label: "1P/3P", selector: "#mobileView" },
+  { key: "weapons", label: "WEAPONS", selector: "#mobileWeaponBar" },
+  { key: "cancel", label: "CANCEL", selector: "#grenadeCancel" }
+];
 
 let started = false;
 let viewMode = "3d";
@@ -130,7 +153,8 @@ let armor = 50;
 let weaponIndex = 0;
 let gunSkinIndex = 0;
 let characterIndex = 0;
-let selectedMap = "practice";
+let selectedMap = "battleRoyale";
+let playerName = "";
 let pubgExpanded = false;
 let coins = 2450;
 let trophies = 0;
@@ -195,9 +219,25 @@ const mobileInput = {
   x: 0,
   z: 0,
   sprint: false,
-  aimHeld: false
+  aimHeld: false,
+  keyboardMode: false
 };
+
+function setKeyboardMode(value) {
+  mobileInput.keyboardMode = value;
+  const hasTouchPoints = navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches === true;
+  const noHover = window.matchMedia?.("(hover: none)")?.matches === true;
+  const touchApi = "ontouchstart" in window;
+  const touchCapable = hasTouchPoints || coarsePointer || (touchApi && noHover);
+  mobileInput.enabled = touchCapable && !mobileInput.keyboardMode;
+  document.body.classList.toggle("touch-device", mobileInput.enabled);
+  document.body.classList.toggle("keyboard-mode", mobileInput.keyboardMode);
+}
 let touchLayout = { ...TOUCH_LAYOUT_DEFAULTS };
+let customTouchLayout = {};
+let touchEditorDraft = {};
+let touchEditorBaseLayout = {};
 
 const multiplayer = {
   socket: null,
@@ -223,6 +263,8 @@ const bots = [];
 const pickups = [];
 const tracers = [];
 const skillProjectiles = [];
+let activeEchoMissile = null;
+let echoMissileView = "";
 const impactMarks = [];
 const shieldWalls = [];
 const botHud = document.createElement("div");
@@ -237,7 +279,8 @@ const player = {
   verticalVelocity: 0,
   grounded: true,
   eyeHeight: STAND_EYE_HEIGHT,
-  fallStartY: STAND_EYE_HEIGHT
+  fallStartY: STAND_EYE_HEIGHT,
+  fallPeakY: STAND_EYE_HEIGHT
 };
 
 const scene = new THREE.Scene();
@@ -276,6 +319,10 @@ scene.add(sun);
 els.play.addEventListener("click", startGame);
 els.createRoom?.addEventListener("click", createRoom);
 els.joinRoom?.addEventListener("click", () => joinRoom(els.roomCodeInput?.value || ""));
+els.playerNameInput?.addEventListener("input", () => {
+  playerName = sanitizePlayerName(els.playerNameInput.value);
+  saveProgress();
+});
 els.viewButton.addEventListener("click", togglePersonView);
 loadProgress();
 initTouchLayoutControls();
@@ -283,6 +330,7 @@ renderLobby();
 renderHotbar();
 initMobileControls();
 document.addEventListener("keydown", event => {
+  if (!event.metaKey && !event.ctrlKey && !event.altKey) setKeyboardMode(true);
   if (event.code === "Tab") {
     event.preventDefault();
     startExtractHold();
@@ -290,6 +338,10 @@ document.addEventListener("keydown", event => {
   }
   if (event.code === "F5" || event.code === "KeyK") {
     event.preventDefault();
+    if (activeEchoMissile && !activeEchoMissile.exploded) {
+      toggleEchoMissileThirdView();
+      return;
+    }
     toggleView();
     return;
   }
@@ -316,6 +368,10 @@ document.addEventListener("keydown", event => {
   if (event.code === "KeyQ") reload();
   if (event.code === "Space") {
     event.preventDefault();
+    if (activeEchoMissile && !activeEchoMissile.exploded) {
+      enterEchoMissileFirstView();
+      return;
+    }
     jump();
   }
   keys.add(event.code);
@@ -332,8 +388,12 @@ document.addEventListener("mousemove", event => {
   mouse.x = event.clientX;
   mouse.y = event.clientY;
   if (!started || document.pointerLockElement !== renderer.domElement) return;
-  yaw -= event.movementX * 0.00235;
-  if (viewMode !== "2d") pitch = clamp(pitch - event.movementY * 0.002, -1.56, 1.56);
+  const missileLook = echoMissileView && activeEchoMissile && !activeEchoMissile.exploded;
+  const followCamera = echoMissileView === "third" || (!missileLook && viewMode === "third");
+  const yawDelta = event.movementX * (missileLook ? 0.0048 : 0.00235);
+  const pitchDelta = event.movementY * (missileLook ? 0.0042 : 0.002);
+  yaw += followCamera ? yawDelta : -yawDelta;
+  if (viewMode !== "2d") pitch = clamp(pitch + (followCamera ? pitchDelta : -pitchDelta), -1.56, 1.56);
 });
 document.addEventListener("contextmenu", event => event.preventDefault());
 document.addEventListener("mousedown", event => {
@@ -344,6 +404,10 @@ document.addEventListener("mousedown", event => {
     shoot();
   }
   if (event.button === 2) {
+    if (activeEchoMissile && !activeEchoMissile.exploded) {
+      teleportToEchoMissile();
+      return;
+    }
     if (WEAPONS[weaponIndex].melee) {
       startKnifeSkill();
       return;
@@ -376,13 +440,16 @@ function initMobileControls() {
     return hasTouchPoints || coarsePointer || (touchApi && noHover);
   };
   const setTouchControls = enabled => {
-    mobileInput.enabled = enabled;
-    document.body.classList.toggle("touch-device", enabled);
+    mobileInput.enabled = enabled && !mobileInput.keyboardMode;
+    document.body.classList.toggle("touch-device", mobileInput.enabled);
+    document.body.classList.toggle("keyboard-mode", mobileInput.keyboardMode);
   };
 
   setTouchControls(detectTouchControls());
   // Some browsers only become clearly touch-capable after the first real touch.
-  window.addEventListener("touchstart", () => setTouchControls(true), { once: true, passive: true });
+  window.addEventListener("touchstart", () => {
+    if (!mobileInput.keyboardMode) setTouchControls(true);
+  }, { passive: true });
 
   if (!els.mobileControls) return;
 
@@ -502,16 +569,6 @@ function initMobileControls() {
   };
 
   bindHoldButton(els.mobileFire, () => { mouseDown = true; shoot(); }, () => { mouseDown = false; });
-  bindHoldButton(els.mobileAim, () => {
-    mobileInput.aimHeld = true;
-    if (WEAPONS[weaponIndex].melee) startKnifeSkill();
-    else if (!tryInteract() && viewMode !== "2d") ads = true;
-  }, () => {
-    mobileInput.aimHeld = false;
-    if (knifeCharging) releaseKnifeCharge();
-    ads = false;
-  });
-
   els.mobileGrenade?.addEventListener("touchstart", event => {
     stop(event);
     const touch = event.changedTouches[0];
@@ -550,7 +607,9 @@ function initMobileControls() {
       action();
       beginLook(event.changedTouches?.[0]);
       button.classList.add("active");
-      setTimeout(() => button.classList.remove("active"), 120);
+      setTimeout(() => {
+        if (button !== els.mobileAim || !ads) button.classList.remove("active");
+      }, 120);
     }, { passive: false });
     button.addEventListener("click", event => {
       event.preventDefault();
@@ -560,6 +619,16 @@ function initMobileControls() {
   };
 
   bindTap(els.mobileJump, jump);
+  bindTap(els.mobileAim, () => {
+    if (WEAPONS[weaponIndex].melee) {
+      if (knifeCharging) releaseKnifeCharge();
+      else startKnifeSkill();
+      return;
+    }
+    if (tryInteract()) return;
+    if (viewMode !== "2d") ads = !ads;
+    els.mobileAim?.classList.toggle("active", ads);
+  });
   bindTap(els.mobileSlide, startSlide);
   bindTap(els.mobileProne, toggleProne);
   bindTap(els.mobileReload, reload);
@@ -602,11 +671,21 @@ function initTouchLayoutControls() {
   });
   els.touchLayoutReset?.addEventListener("click", () => {
     touchLayout = { ...TOUCH_LAYOUT_DEFAULTS };
+    customTouchLayout = {};
     bindings.forEach(([input, key]) => {
       if (input) input.value = String(touchLayout[key]);
     });
     applyTouchLayout();
     saveProgress();
+  });
+  els.touchCustomize?.addEventListener("click", openTouchEditor);
+  els.touchEditorSave?.addEventListener("click", saveTouchEditor);
+  els.touchEditorCancel?.addEventListener("click", closeTouchEditor);
+  els.touchEditorReset?.addEventListener("click", () => {
+    customTouchLayout = {};
+    touchEditorDraft = {};
+    applyTouchLayout();
+    buildTouchEditorControls();
   });
 }
 
@@ -618,6 +697,184 @@ function applyTouchLayout() {
   root.style.setProperty("--touch-actions-y", `${touchLayout.actionsY}px`);
   root.style.setProperty("--touch-actions-scale", touchLayout.scale / 100);
   root.style.setProperty("--touch-look-width", `${touchLayout.lookWidth}vw`);
+  const hasCustom = Object.keys(customTouchLayout).length > 0;
+  document.body.classList.toggle("custom-touch-layout", hasCustom);
+  for (const item of CUSTOM_TOUCH_KEYS) {
+    const target = document.querySelector(item.selector);
+    if (!target) continue;
+    const pos = customTouchLayout[item.key];
+    target.classList.toggle("custom-positioned", !!pos);
+    if (pos) {
+      target.style.left = `${pos.x}vw`;
+      target.style.top = `${pos.y}vh`;
+      target.style.right = "auto";
+      target.style.bottom = "auto";
+      target.style.transform = `scale(${clamp(Number(pos.scale) || 1, 0.55, 1.8)})`;
+      target.style.transformOrigin = "center center";
+    } else {
+      target.style.left = "";
+      target.style.top = "";
+      target.style.right = "";
+      target.style.bottom = "";
+      target.style.transform = "";
+      target.style.transformOrigin = "";
+    }
+  }
+}
+
+function openTouchEditor() {
+  if (!els.touchEditor || !els.touchEditorStage) return;
+  touchEditorDraft = {};
+  touchEditorBaseLayout = { ...customTouchLayout };
+  document.body.classList.add("touch-editor-open", "force-mobile-controls");
+  els.touchEditor.classList.remove("hidden");
+  buildTouchEditorControls();
+}
+
+function closeTouchEditor(restore = true) {
+  if (restore) {
+    customTouchLayout = { ...touchEditorBaseLayout };
+    applyTouchLayout();
+  }
+  document.body.classList.remove("touch-editor-open", "force-mobile-controls");
+  els.touchEditor?.classList.add("hidden");
+  touchEditorDraft = {};
+  touchEditorBaseLayout = {};
+}
+
+function buildTouchEditorControls() {
+  if (!els.touchEditorStage) return;
+  els.touchEditorStage.innerHTML = "";
+  els.touchEditor?.classList.remove("editing");
+  for (const item of CUSTOM_TOUCH_KEYS) {
+    const target = document.querySelector(item.selector);
+    if (!target) continue;
+    const rect = getTouchControlRect(item, target);
+    const handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "touch-editor-control";
+    handle.dataset.key = item.key;
+    handle.textContent = item.label;
+    const resize = document.createElement("span");
+    resize.className = "touch-editor-resize";
+    resize.textContent = "↘";
+    handle.append(resize);
+    handle.style.left = `${rect.left}px`;
+    handle.style.top = `${rect.top}px`;
+    handle.style.width = `${Math.max(56, rect.width)}px`;
+    handle.style.height = `${Math.max(42, rect.height)}px`;
+    handle.dataset.baseWidth = String(rect.baseWidth || rect.width);
+    handle.dataset.baseHeight = String(rect.baseHeight || rect.height);
+    handle.addEventListener("pointerdown", event => startTouchControlDrag(event, handle));
+    resize.addEventListener("pointerdown", event => startTouchControlResize(event, handle));
+    els.touchEditorStage.append(handle);
+  }
+}
+
+function getTouchControlRect(item, target) {
+  const custom = customTouchLayout[item.key];
+  const previousVisibility = els.mobileControls?.style.visibility || "";
+  if (els.mobileControls) els.mobileControls.style.visibility = "hidden";
+  const rect = target.getBoundingClientRect();
+  if (els.mobileControls) els.mobileControls.style.visibility = previousVisibility;
+  if (custom || rect.width <= 0 || rect.height <= 0) {
+    const width = item.key === "move" ? 154 : item.key === "weapons" ? 300 : item.key === "fire" ? 96 : 76;
+    const height = item.key === "move" ? 154 : item.key === "weapons" ? 58 : item.key === "fire" ? 96 : 56;
+    return {
+      left: custom ? innerWidth * custom.x / 100 : Math.max(10, innerWidth - width - 24),
+      top: custom ? innerHeight * custom.y / 100 : Math.max(10, innerHeight - height - 24),
+      width: width * (custom?.scale || 1),
+      height: height * (custom?.scale || 1),
+      baseWidth: width,
+      baseHeight: height
+    };
+  }
+  const customScale = custom?.scale || 1;
+  return {
+    left: custom ? innerWidth * custom.x / 100 : rect.left,
+    top: custom ? innerHeight * custom.y / 100 : rect.top,
+    width: rect.width * customScale,
+    height: rect.height * customScale,
+    baseWidth: rect.width,
+    baseHeight: rect.height
+  };
+}
+
+function startTouchControlDrag(event, handle) {
+  event.preventDefault();
+  handle.setPointerCapture?.(event.pointerId);
+  els.touchEditor?.classList.add("editing");
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const startLeft = parseFloat(handle.style.left) || 0;
+  const startTop = parseFloat(handle.style.top) || 0;
+  const width = handle.offsetWidth;
+  const height = handle.offsetHeight;
+  const move = moveEvent => {
+    const left = clamp(startLeft + moveEvent.clientX - startX, 0, innerWidth - width);
+    const top = clamp(startTop + moveEvent.clientY - startY, 0, innerHeight - height);
+    handle.style.left = `${left}px`;
+    handle.style.top = `${top}px`;
+    touchEditorDraft[handle.dataset.key] = getTouchEditorHandleState(handle);
+  };
+  const up = () => {
+    handle.removeEventListener("pointermove", move);
+    handle.removeEventListener("pointerup", up);
+    handle.removeEventListener("pointercancel", up);
+  };
+  handle.addEventListener("pointermove", move);
+  handle.addEventListener("pointerup", up);
+  handle.addEventListener("pointercancel", up);
+}
+
+function startTouchControlResize(event, handle) {
+  event.preventDefault();
+  event.stopPropagation();
+  const startX = event.clientX;
+  const startWidth = handle.offsetWidth;
+  const startHeight = handle.offsetHeight;
+  const baseWidth = Number(handle.dataset.baseWidth) || startWidth;
+  const baseHeight = Number(handle.dataset.baseHeight) || startHeight;
+  const resize = moveEvent => {
+    const delta = moveEvent.clientX - startX;
+    const nextWidth = clamp(startWidth + delta, baseWidth * 0.55, baseWidth * 1.8);
+    const nextScale = clamp(nextWidth / baseWidth, 0.55, 1.8);
+    handle.style.width = `${baseWidth * nextScale}px`;
+    handle.style.height = `${baseHeight * nextScale}px`;
+    touchEditorDraft[handle.dataset.key] = getTouchEditorHandleState(handle);
+  };
+  const up = () => {
+    handle.removeEventListener("pointermove", resize);
+    handle.removeEventListener("pointerup", up);
+    handle.removeEventListener("pointercancel", up);
+  };
+  handle.setPointerCapture?.(event.pointerId);
+  handle.addEventListener("pointermove", resize);
+  handle.addEventListener("pointerup", up);
+  handle.addEventListener("pointercancel", up);
+}
+
+function getTouchEditorHandleState(handle) {
+  const left = parseFloat(handle.style.left) || 0;
+  const top = parseFloat(handle.style.top) || 0;
+  const baseWidth = Number(handle.dataset.baseWidth) || handle.offsetWidth || 1;
+  return {
+    x: clamp(left / innerWidth * 100, 0, 100),
+    y: clamp(top / innerHeight * 100, 0, 100),
+    scale: clamp((handle.offsetWidth || baseWidth) / baseWidth, 0.55, 1.8)
+  };
+}
+
+function saveTouchEditor() {
+  if (!els.touchEditorStage) return;
+  const nextLayout = {};
+  for (const handle of els.touchEditorStage.querySelectorAll(".touch-editor-control")) {
+    nextLayout[handle.dataset.key] = getTouchEditorHandleState(handle);
+  }
+  customTouchLayout = nextLayout;
+  applyTouchLayout();
+  saveProgress();
+  closeTouchEditor(false);
 }
 
 function renderLobby() {
@@ -639,7 +896,9 @@ function saveProgress() {
       gunSkinIndex,
       characterIndex,
       selectedMap,
-      touchLayout
+      playerName,
+      touchLayout,
+      customTouchLayout
     }));
   } catch (error) {
     console.warn("saveProgress failed:", error);
@@ -658,7 +917,9 @@ function loadProgress() {
     }
   if (Number.isFinite(data.gunSkinIndex)) gunSkinIndex = clamp(Math.floor(data.gunSkinIndex), 0, GUN_SKINS.length - 1);
   if (Number.isFinite(data.characterIndex)) characterIndex = clamp(Math.floor(data.characterIndex), 0, CHARACTERS.length - 1);
-  if (MAPS.some(map => map.key === data.selectedMap)) selectedMap = data.selectedMap; else selectedMap = "duel";
+  if (MAPS.some(map => map.key === data.selectedMap)) selectedMap = data.selectedMap; else selectedMap = "battleRoyale";
+  playerName = sanitizePlayerName(data.playerName || "");
+  if (els.playerNameInput) els.playerNameInput.value = playerName;
   if (data.touchLayout && typeof data.touchLayout === "object") {
     touchLayout = {
       stickX: clamp(Number(data.touchLayout.stickX) || TOUCH_LAYOUT_DEFAULTS.stickX, 0, 120),
@@ -668,6 +929,19 @@ function loadProgress() {
       scale: clamp(Number(data.touchLayout.scale) || TOUCH_LAYOUT_DEFAULTS.scale, 78, 116),
       lookWidth: clamp(Number(data.touchLayout.lookWidth) || TOUCH_LAYOUT_DEFAULTS.lookWidth, 42, 76)
     };
+    applyTouchLayout();
+  }
+  if (data.customTouchLayout && typeof data.customTouchLayout === "object") {
+    customTouchLayout = {};
+    for (const item of CUSTOM_TOUCH_KEYS) {
+      const pos = data.customTouchLayout[item.key];
+      if (!pos || typeof pos !== "object") continue;
+      customTouchLayout[item.key] = {
+        x: clamp(Number(pos.x) || 0, 0, 100),
+        y: clamp(Number(pos.y) || 0, 0, 100),
+        scale: clamp(Number(pos.scale) || 1, 0.55, 1.8)
+      };
+    }
     applyTouchLayout();
   }
   applyGunSkin();
@@ -699,6 +973,11 @@ function updateSelectedMapInfo() {
   if (!els.selectedMapInfo) return;
   const map = MAPS.find(item => item.key === selectedMap) || MAPS[0];
   els.selectedMapInfo.textContent = `Selected mode: ${map.name}. ${map.desc}`;
+}
+
+function sanitizePlayerName(value) {
+  const clean = String(value || "").replace(/[<>]/g, "").trim().slice(0, 16);
+  return clean || "Player";
 }
 
 function renderCharacterGrid() {
@@ -798,6 +1077,9 @@ function updateMobileWeaponButtons() {
 }
 
 function startGame() {
+  playerName = sanitizePlayerName(els.playerNameInput?.value || playerName);
+  if (els.playerNameInput) els.playerNameInput.value = playerName;
+  saveProgress();
   started = true;
   hp = CHARACTERS[characterIndex]?.hp || 100;
   armor = 50;
@@ -834,13 +1116,14 @@ function startGame() {
     }
     wave = multiplayer.roomCode;
     clearBots();
+    if (selectedMap === "battleRoyale") spawnBots(8);
     ensureRemoteBot();
     setPlayerSpawn(multiplayer.role === "host" ? 1 : 2);
-    sendSocket({ type: "ready", characterIndex, gunSkinIndex });
+    sendSocket({ type: "ready", characterIndex, gunSkinIndex, playerName, mode: selectedMap });
   }
   els.menu.classList.add("hidden");
   if (!mobileInput.enabled) renderer.domElement.requestPointerLock?.();
-  const modeLabel = selectedMap === "practice" ? "Solo Practice started" : "Online 1V1 started";
+  const modeLabel = selectedMap === "practice" ? "Solo Practice started" : selectedMap === "battleRoyale" ? "Duo Battle Royale started" : "Online 1V1 started";
   flashMessage(mobileInput.enabled ? `${modeLabel}: left stick moves, right side looks` : modeLabel);
 }
 
@@ -851,8 +1134,8 @@ function animate(now) {
   if (started && !paused) {
     updateExtractHold(dt);
     updatePlayer(dt);
-    if (selectedMap === "duel") updateMultiplayer(dt);
-    if (selectedMap === "practice") updateBots(dt);
+    if (selectedMap !== "practice") updateMultiplayer(dt);
+    if (selectedMap === "practice" || selectedMap === "battleRoyale") updateBots(dt);
     updateCombat(dt);
     updatePickups(dt);
     updateTracers(dt);
@@ -937,19 +1220,28 @@ function jump() {
 
 function updateVerticalMotion(dt) {
   const floorY = getFloorHeight(player.position.x, player.position.z, player.position.y);
-  if (player.grounded && player.verticalVelocity <= 0) player.fallStartY = player.position.y;
+  if (player.grounded && player.verticalVelocity <= 0) {
+    player.fallStartY = player.position.y;
+    player.fallPeakY = player.position.y;
+  }
   player.verticalVelocity -= GRAVITY * dt;
   player.position.y += player.verticalVelocity * dt;
+  if (!player.grounded) player.fallPeakY = Math.max(player.fallPeakY || player.position.y, player.position.y);
   if (player.position.y <= floorY + player.eyeHeight) {
-    const landedFrom = player.fallStartY || player.position.y;
+    const impactSpeed = Math.max(0, -player.verticalVelocity);
+    const landedFrom = Math.max(player.fallStartY || player.position.y, player.fallPeakY || player.position.y);
     const drop = Math.max(0, landedFrom - (floorY + player.eyeHeight));
     player.position.y = floorY + player.eyeHeight;
-    if (!player.grounded) applyFallDamage(drop);
+    if (!player.grounded) applyFallDamage(drop, impactSpeed);
     player.verticalVelocity = 0;
     player.grounded = true;
     player.fallStartY = player.position.y;
+    player.fallPeakY = player.position.y;
   } else {
-    if (player.grounded) player.fallStartY = player.position.y;
+    if (player.grounded) {
+      player.fallStartY = player.position.y;
+      player.fallPeakY = player.position.y;
+    }
     player.grounded = false;
   }
 }
@@ -1299,7 +1591,7 @@ function throwSkillBlade(type, charge) {
   const speedBonus = clamp(player.velocity.length() / SPRINT_SPEED, 0, 1.55);
   const projectile = {
     type,
-    mesh: buildSkillBladeMesh(type),
+    mesh: type === "missile" ? buildEchoMissileMesh() : buildSkillBladeMesh(type),
     position: origin.clone(),
     velocity: forward.clone().multiplyScalar(type === "trident" ? 17 + charge * 12 : type === "boomerang" ? 16 + charge * 10 : type === "homing" ? 15 + charge * 8 : 16),
     forward,
@@ -1315,14 +1607,58 @@ function throwSkillBlade(type, charge) {
     damage: Math.round(clamp(18 + charge * 32, 18, 50))
   };
   if (type === "missile") {
-    projectile.life = 4.2 + charge * 1.6;
+    projectile.life = 18 + charge * 7;
     projectile.velocity.copy(forward).multiplyScalar(8.5 + charge * 5.5);
     projectile.damage = Math.round(clamp(24 + charge * 36, 28, 60));
+    projectile.controlled = true;
+    activeEchoMissile = projectile;
+    echoMissileView = "";
   }
   projectile.mesh.position.copy(projectile.position);
   scene.add(projectile.mesh);
   skillProjectiles.push(projectile);
-  flashMessage(type === "spear" ? `Piercing dash x${(1 + speedBonus).toFixed(1)}` : KNIFE_SKILLS[characterIndex]);
+  flashMessage(type === "missile" ? "Echo missile: Space cockpit, F5 third view, right click blink" : type === "spear" ? `Piercing dash x${(1 + speedBonus).toFixed(1)}` : KNIFE_SKILLS[characterIndex]);
+}
+
+function enterEchoMissileFirstView() {
+  if (!activeEchoMissile || activeEchoMissile.exploded) return;
+  echoMissileView = "first";
+  syncViewToEchoMissile();
+  flashMessage("Echo missile cockpit");
+}
+
+function toggleEchoMissileThirdView() {
+  if (!activeEchoMissile || activeEchoMissile.exploded) return;
+  echoMissileView = echoMissileView === "third" ? "first" : "third";
+  syncViewToEchoMissile();
+  flashMessage(echoMissileView === "third" ? "Echo missile third view" : "Echo missile cockpit");
+}
+
+function syncViewToEchoMissile() {
+  if (!activeEchoMissile) return;
+  activeEchoMissile.mesh.visible = echoMissileView !== "first";
+  const direction = activeEchoMissile.velocity.clone().normalize();
+  yaw = Math.atan2(-direction.x, -direction.z);
+  pitch = clamp(Math.asin(direction.y), -1.2, 1.2);
+  mouseDown = false;
+  ads = false;
+  renderer.domElement.requestPointerLock?.();
+}
+
+function teleportToEchoMissile() {
+  if (!activeEchoMissile || activeEchoMissile.exploded) return;
+  const target = activeEchoMissile.position.clone();
+  const floorY = getFloorHeight(target.x, target.z, target.y);
+  player.position.set(target.x, Math.max(target.y, floorY + STAND_EYE_HEIGHT), target.z);
+  player.verticalVelocity = 0;
+  player.grounded = target.y <= floorY + STAND_EYE_HEIGHT + 0.2;
+  player.fallStartY = player.position.y;
+  player.fallPeakY = player.position.y;
+  keepOutOfObstacles(player.position, 0.62, player.position.y);
+  activeEchoMissile.noSelfEffect = true;
+  explodeSkillProjectile(activeEchoMissile, target);
+  echoMissileView = "";
+  flashMessage("Echo blink");
 }
 
 function startGrenadeAim(touchId = null) {
@@ -1411,6 +1747,48 @@ function buildGrenadeMesh() {
   pin.position.set(0.12, 0.16, 0);
   pin.rotation.y = Math.PI / 2;
   group.add(body, band, pin);
+  return group;
+}
+
+function buildEchoMissileMesh() {
+  const group = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8fc8ff, metalness: 0.42, roughness: 0.24, emissive: 0x0d3654, emissiveIntensity: 0.22 });
+  const noseMat = new THREE.MeshStandardMaterial({ color: 0xdff3ff, metalness: 0.28, roughness: 0.18 });
+  const finMat = new THREE.MeshStandardMaterial({ color: 0x5d45a8, metalness: 0.22, roughness: 0.32, emissive: 0x201044, emissiveIntensity: 0.16 });
+  const flameMat = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.82, blending: THREE.AdditiveBlending, depthWrite: false });
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.92, 18), bodyMat);
+  body.rotation.x = Math.PI / 2;
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.165, 18, 10), noseMat);
+  nose.scale.z = 1.35;
+  nose.position.z = -0.55;
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.16, 18), bodyMat);
+  tail.rotation.x = Math.PI / 2;
+  tail.position.z = 0.48;
+
+  const finShape = new THREE.Shape();
+  finShape.moveTo(0, 0);
+  finShape.quadraticCurveTo(0.18, -0.03, 0.28, -0.16);
+  finShape.quadraticCurveTo(0.12, -0.22, -0.02, -0.1);
+  finShape.lineTo(0, 0);
+  const finGeometry = new THREE.ExtrudeGeometry(finShape, { depth: 0.035, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 1 });
+  finGeometry.center();
+  for (const side of [-1, 1]) {
+    const fin = new THREE.Mesh(finGeometry, finMat);
+    fin.position.set(side * 0.18, -0.02, 0.25);
+    fin.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+    fin.rotation.z = side > 0 ? -0.25 : 0.25;
+    group.add(fin);
+  }
+
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 12), flameMat);
+  flame.rotation.x = Math.PI / 2;
+  flame.position.z = 0.72;
+  const flameCore = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.42, 10), new THREE.MeshBasicMaterial({ color: 0xfff0a8, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+  flameCore.rotation.x = Math.PI / 2;
+  flameCore.position.z = 0.8;
+  group.userData.flames = [flame, flameCore];
+  group.add(body, nose, tail, flame, flameCore);
   return group;
 }
 
@@ -1533,10 +1911,12 @@ function updateSlide(dt) {
   }
 }
 
-function applyFallDamage(drop) {
+function applyFallDamage(drop, impactSpeed = 0) {
   const floors = drop / FLOOR_HEIGHT;
-  if (floors < 2.6) return;
-  const damage = Math.round((floors - 2.2) * 18 + Math.max(0, floors - 3) * 16);
+  const speedDamage = Math.max(0, impactSpeed - 15.5) * 4.2;
+  const heightDamage = floors < 1.6 ? 0 : (floors - 1.35) * 20 + Math.max(0, floors - 3) * 18;
+  const damage = Math.round(Math.max(speedDamage, heightDamage));
+  if (damage <= 0) return;
   applyDamage(damage);
   flashMessage(`Fall damage -${damage} HP`);
 }
@@ -1656,6 +2036,7 @@ function damageBot(bot, damage, label = "", knock = null) {
 }
 
 function applyDamage(amount) {
+  if (activeEchoMissile && !activeEchoMissile.exploded) return;
   let damage = amount;
   if (armor > 0) {
     const blocked = Math.min(armor, Math.ceil(damage * 0.65));
@@ -1920,6 +2301,38 @@ function addImpactMark(point, normal, type) {
   }
 }
 
+function addExplosionWave(center) {
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xff2d2d,
+    transparent: true,
+    opacity: 0.72,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.52, 48), material);
+  ring.position.copy(center);
+  ring.position.y += 0.08;
+  ring.rotation.x = -Math.PI / 2;
+  ring.userData.life = 0.55;
+  ring.userData.maxLife = 0.55;
+  ring.userData.explosionWave = true;
+  impactMarks.push(ring);
+  scene.add(ring);
+
+  const column = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.42, 1.35, 2.2, 32, 1, true),
+    material.clone()
+  );
+  column.position.copy(center);
+  column.position.y += 1.1;
+  column.userData.life = 0.45;
+  column.userData.maxLife = 0.45;
+  column.userData.explosionWave = true;
+  column.userData.verticalWave = true;
+  impactMarks.push(column);
+  scene.add(column);
+}
+
 function getFloorHeight(x, z, currentY) {
   let floor = 0;
   let rampFloor = null;
@@ -2013,7 +2426,17 @@ function updateImpactMarks(dt) {
   for (let i = impactMarks.length - 1; i >= 0; i--) {
     const mark = impactMarks[i];
     mark.userData.life -= dt;
-    if (mark.userData.life < 3) mark.material.opacity *= Math.max(0, 1 - dt * 1.4);
+    if (mark.userData.explosionWave) {
+      const t = 1 - mark.userData.life / mark.userData.maxLife;
+      if (mark.userData.verticalWave) {
+        mark.scale.set(1 + t * 2.4, 1 + t * 3.8, 1 + t * 2.4);
+        mark.position.y += dt * 2.9;
+      } else {
+        const scale = 1 + t * 8.5;
+        mark.scale.set(scale, scale, scale);
+      }
+      mark.material.opacity = Math.max(0, 0.72 * (1 - t));
+    } else if (mark.userData.life < 3) mark.material.opacity *= Math.max(0, 1 - dt * 1.4);
     if (mark.userData.life > 0) continue;
     scene.remove(mark);
     mark.geometry.dispose();
@@ -2049,14 +2472,29 @@ function updateSkillProjectiles(dt) {
     }
 
     if (projectile.type === "missile") {
-      if (keys.has("Space")) {
+      if (echoMissileView && projectile === activeEchoMissile) {
+        const steer = getAimDirection(0);
+        if (viewMode === "2d") steer.y = 0;
+        steer.normalize();
+        const speed = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint ? 22 + projectile.charge * 6 : 11 + projectile.charge * 5;
+        projectile.velocity.lerp(steer.multiplyScalar(speed), Math.min(1, dt * 14));
+      } else if (keys.has("Space")) {
         const steer = getAimDirection(0);
         if (viewMode === "2d") steer.y = 0;
         steer.normalize();
         const speed = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint ? 18 : 10 + projectile.charge * 6;
-        projectile.velocity.lerp(steer.multiplyScalar(speed), Math.min(1, dt * 4.2));
+        projectile.velocity.lerp(steer.multiplyScalar(speed), Math.min(1, dt * 8));
       }
       if (projectile.age > projectile.life) explodeSkillProjectile(projectile);
+      const boosted = keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint;
+      const pulse = 0.75 + Math.sin(performance.now() * 0.032) * 0.18;
+      projectile.mesh.userData.flames?.forEach((flame, index) => {
+        const length = (boosted ? 1.75 : 1.1) * pulse * (index === 0 ? 1 : 1.18);
+        const width = (boosted ? 1.18 : 0.92) * (index === 0 ? 1 : 0.72);
+        flame.scale.set(width, length, width);
+        flame.material.opacity = clamp((boosted ? 0.96 : 0.7) + Math.sin(performance.now() * 0.045 + index) * 0.14, 0.35, 1);
+        flame.position.z = 0.72 + length * 0.1 + index * 0.08;
+      });
     }
 
     if (projectile.type === "grenade") {
@@ -2088,9 +2526,16 @@ function updateSkillProjectiles(dt) {
 
     projectile.position.addScaledVector(projectile.velocity, dt);
     if (projectile.fixedY !== null) projectile.position.y = projectile.fixedY;
+    if (projectile.type === "missile") {
+      const floorY = getFloorHeight(projectile.position.x, projectile.position.z, projectile.position.y);
+      if (projectile.age > 0.12 && projectile.position.y <= floorY + 0.18) {
+        projectile.position.y = floorY + 0.18;
+        explodeSkillProjectile(projectile);
+      }
+    }
     projectile.mesh.position.copy(projectile.position);
     if (projectile.velocity.lengthSq() > 0.01) {
-      aimProjectileMesh(projectile.mesh, projectile.velocity, projectile.type !== "grenade");
+      aimProjectileMesh(projectile.mesh, projectile.velocity, projectile.type !== "grenade" && projectile.type !== "missile");
     }
     const spin = projectile.type === "trident" || projectile.type === "homing" || projectile.type === "missile" ? 0 : projectile.type === "boomerang" ? 8 : 5;
     projectile.mesh.rotateZ(dt * spin);
@@ -2130,8 +2575,10 @@ function hitSkillProjectile(projectile) {
       break;
     }
     projectile.hitBots.add(bot);
-    const knock = projectile.type === "missile" ? getExplosionKnockPayload(projectile.position, bot.group.position, projectile.velocity) : null;
+    const directHit = projectile.type === "missile";
+    const knock = directHit ? getExplosionKnockPayload(projectile.position, bot.group.position, projectile.velocity) : null;
     damageBot(bot, projectile.damage, projectile.type === "homing" ? "Homing" : projectile.type === "missile" ? "Echo blade" : projectile.type === "spear" ? "Spear" : "Knife", knock);
+    if (directHit) bot.verticalVelocity = Math.max(bot.verticalVelocity || 0, 8.5);
     showHitmarker();
     if (projectile.type === "missile") {
       explodeSkillProjectile(projectile);
@@ -2145,15 +2592,22 @@ function hitSkillProjectile(projectile) {
 function explodeSkillProjectile(projectile, point = null) {
   if (!projectile || projectile.exploded) return;
   projectile.exploded = true;
+  if (projectile === activeEchoMissile) echoMissileView = "";
   const center = (point || projectile.position).clone();
-  if (projectile.type === "grenade") applyExplosionDamage(center, projectile);
-  applyExplosionKnockback(center, projectile.velocity);
+  if (projectile.type === "grenade" || projectile.type === "missile") applyExplosionDamage(center, projectile);
+  applyExplosionKnockback(center, projectile.velocity, (projectile.type === "missile" && projectile === activeEchoMissile) || projectile.noSelfEffect);
   addImpactMark(center, new THREE.Vector3(0, 1, 0), "slash");
+  addExplosionWave(center);
   shakeTimer = Math.max(shakeTimer, 0.14);
   shakePower = Math.max(shakePower, 0.07);
 }
 
 function removeSkillProjectile(projectile, index) {
+  if (projectile === activeEchoMissile) {
+    projectile.mesh.visible = true;
+    activeEchoMissile = null;
+    echoMissileView = "";
+  }
   scene.remove(projectile.mesh);
   skillProjectiles.splice(index, 1);
 }
@@ -2174,7 +2628,7 @@ function getExplosionKnockPayload(center, targetPosition, fallbackVelocity = nul
   };
 }
 
-function applyExplosionKnockback(center, fallbackVelocity = null) {
+function applyExplosionKnockback(center, fallbackVelocity = null, skipPlayer = false) {
   for (const bot of bots) {
     if (!bot.group.visible || bot.deadTimer > 0) continue;
     const flatDistance = Math.hypot(bot.group.position.x - center.x, bot.group.position.z - center.z);
@@ -2182,9 +2636,10 @@ function applyExplosionKnockback(center, fallbackVelocity = null) {
     const knock = getExplosionKnockPayload(center, bot.group.position, fallbackVelocity);
     const amount = EXPLOSION_KNOCK_DISTANCE * (1 - flatDistance / EXPLOSION_KNOCK_RADIUS) + 0.28;
     moveWithCollision(bot.group.position, knock.x * amount, knock.z * amount, 0.72, bot.group.position.y);
-    bot.verticalVelocity = Math.max(bot.verticalVelocity || 0, 1.2 * (1 - flatDistance / EXPLOSION_KNOCK_RADIUS));
+    bot.verticalVelocity = Math.max(bot.verticalVelocity || 0, 2.1 * (1 - flatDistance / EXPLOSION_KNOCK_RADIUS) + 0.7);
   }
 
+  if (skipPlayer) return;
   const playerFoot = player.position.clone();
   playerFoot.y -= player.eyeHeight;
   const playerDistance = Math.hypot(player.position.x - center.x, player.position.z - center.z);
@@ -2200,7 +2655,7 @@ function applyPlayerKnockback(knock, falloff = 1) {
   if (direction.lengthSq() < 0.0001) return;
   direction.normalize();
   moveWithCollision(player.position, direction.x * amount, direction.z * amount, prone ? 0.5 : 0.62, player.position.y);
-  player.verticalVelocity = Math.max(player.verticalVelocity, 1.1 * clamp(falloff, 0.2, 1));
+  player.verticalVelocity = Math.max(player.verticalVelocity, 2.0 * clamp(falloff, 0.2, 1) + 0.45);
 }
 
 function applyExplosionDamage(center, projectile) {
@@ -2213,10 +2668,11 @@ function applyExplosionDamage(center, projectile) {
     const falloff = 1 - flatDistance / damageRadius;
     const damage = Math.round(projectile.damage * clamp(falloff, 0.3, 1));
     const knock = getExplosionKnockPayload(center, bot.group.position, projectile.velocity);
-    damageBot(bot, damage, "Grenade", knock);
+    damageBot(bot, damage, projectile.type === "missile" ? "Echo blade" : "Grenade", knock);
     showHitmarker();
   }
 
+  if ((projectile.type === "missile" && projectile === activeEchoMissile) || projectile.noSelfEffect) return;
   const playerFootY = player.position.y - player.eyeHeight;
   const playerDistance = Math.hypot(player.position.x - center.x, player.position.z - center.z);
   if (playerDistance <= damageRadius && Math.abs(playerFootY - center.y) <= 3.2) {
@@ -2243,7 +2699,21 @@ function aimProjectileMesh(mesh, velocity, flatBlade = false) {
 
 function updateCamera(dt) {
   updatePlayerModel();
-  if (viewMode === "2d") {
+  if (echoMissileView && activeEchoMissile?.mesh.parent && !activeEchoMissile.exploded) {
+    activeEchoMissile.mesh.visible = echoMissileView !== "first";
+    const direction = activeEchoMissile.velocity.clone();
+    if (direction.lengthSq() < 0.001) direction.set(0, 0, -1);
+    direction.normalize();
+    const target = echoMissileView === "third"
+      ? activeEchoMissile.position.clone().addScaledVector(direction, -2.35).add(new THREE.Vector3(0, 0.85, 0))
+      : activeEchoMissile.position.clone().addScaledVector(direction, 1.45);
+    camera.position.lerp(target, Math.min(1, dt * 12));
+    camera.lookAt(activeEchoMissile.position.clone().addScaledVector(direction, 6));
+    camera.fov += ((keys.has("ShiftLeft") || keys.has("ShiftRight") ? 78 : echoMissileView === "third" ? 68 : 74) - camera.fov) * Math.min(1, dt * 10);
+    gun.visible = false;
+    playerModel.visible = false;
+  } else if (viewMode === "2d") {
+    if (activeEchoMissile?.mesh.parent) activeEchoMissile.mesh.visible = true;
     pitch = -1.0;
     const target = new THREE.Vector3(player.position.x, 34, player.position.z + 0.01);
     camera.position.lerp(target, Math.min(1, dt * 9));
@@ -2329,6 +2799,11 @@ function updateHud(dt = 0) {
   document.body.classList.toggle("sliding", sliding);
   document.body.classList.toggle("scope-holo", viewMode !== "2d" && ads && WEAPONS[weaponIndex].name === "Rifle");
   document.body.classList.toggle("scope-sniper", viewMode !== "2d" && ads && WEAPONS[weaponIndex].name === "Sniper");
+  const echoMissileCockpit = echoMissileView === "first" && activeEchoMissile && !activeEchoMissile.exploded;
+  const echoMissileThrust = echoMissileCockpit && (keys.has("ShiftLeft") || keys.has("ShiftRight") || mobileInput.sprint);
+  document.body.classList.toggle("echo-missile-cockpit", !!echoMissileCockpit);
+  document.body.classList.toggle("echo-missile-rush", !!echoMissileThrust);
+  els.mobileAim?.classList.toggle("active", ads || knifeCharging);
   els.pause.classList.toggle("hidden", !paused);
   updateHotbar(dt);
   drawRadar();
@@ -2821,6 +3296,8 @@ function respawnPlayer() {
   player.position.set(0, STAND_EYE_HEIGHT, 16);
   player.verticalVelocity = 0;
   player.grounded = true;
+  player.fallStartY = player.position.y;
+  player.fallPeakY = player.position.y;
 }
 
 function spawnBots(count) {
@@ -2983,10 +3460,6 @@ function addPubgMapDetails() {
   addRoad(0, 0, 7, 260, Math.PI / 2);
   addRoad(-28, 30, 6, 190, 0.42);
   addRoad(55, -45, 5, 150, -0.2);
-  const homes = [
-    [-88, -80, 12, 10], [88, -76, 10, 12], [-102, 70, 11, 10], [96, 86, 12, 12]
-  ];
-  for (const [x, z, w, d] of homes) addHouse(x, z, w, d, 3.4);
   addContainerYard(35, 8);
   addContainerYard(-72, -42);
   for (let i = 0; i < 150; i++) {
@@ -3683,7 +4156,8 @@ function sendSocket(payload) {
 }
 
 function createRoom() {
-  const payload = { type: "create", characterIndex, gunSkinIndex };
+  playerName = sanitizePlayerName(els.playerNameInput?.value || playerName);
+  const payload = { type: "create", characterIndex, gunSkinIndex, playerName, mode: selectedMap };
   connectSocket();
   if (!sendSocket(payload)) multiplayer.pending = payload;
   updateRoomStatus("Creating room...", "warn");
@@ -3695,7 +4169,8 @@ function joinRoom(code) {
     updateRoomStatus("Enter the room code from your friend.", "bad");
     return;
   }
-  const payload = { type: "join", roomCode: clean, characterIndex, gunSkinIndex };
+  playerName = sanitizePlayerName(els.playerNameInput?.value || playerName);
+  const payload = { type: "join", roomCode: clean, characterIndex, gunSkinIndex, playerName, mode: selectedMap };
   connectSocket();
   if (!sendSocket(payload)) multiplayer.pending = payload;
   updateRoomStatus(`Joining room ${clean}...`, "warn");
@@ -3709,7 +4184,7 @@ function handleSocketMessage(data) {
     multiplayer.players = data.players || {};
     multiplayer.opponentReady = false;
     if (els.roomCodeInput) els.roomCodeInput.value = data.roomCode;
-    updateRoomStatus(`Room code: ${data.roomCode}. Send this code to your friend.`, "ok");
+    updateRoomStatus(`Room code: ${data.roomCode}. Send this code to your friend. Mode: ${getModeName(selectedMap)}.`, "ok");
     return;
   }
   if (data.type === "joined" || data.type === "roomUpdate") {
@@ -3720,7 +4195,7 @@ function handleSocketMessage(data) {
     multiplayer.opponentReady = Object.keys(multiplayer.players).length >= 2;
     ensureRemoteBot();
     updateRemoteFromPlayers();
-    updateRoomStatus(multiplayer.opponentReady ? `Room ${multiplayer.roomCode} is full. Start 1V1 when ready.` : `Room ${multiplayer.roomCode}: waiting for opponent.`, multiplayer.opponentReady ? "ok" : "warn");
+    updateRoomStatus(multiplayer.opponentReady ? `Room ${multiplayer.roomCode} is ready. Start ${getModeName(selectedMap)} when ready.` : `Room ${multiplayer.roomCode}: waiting for opponent.`, multiplayer.opponentReady ? "ok" : "warn");
     return;
   }
   if (data.type === "state") {
@@ -3767,6 +4242,10 @@ function getRemotePlayerId() {
   return Object.keys(multiplayer.players).find(id => id !== multiplayer.playerId) || "";
 }
 
+function getModeName(key) {
+  return MAPS.find(map => map.key === key)?.name || "Online Match";
+}
+
 function ensureRemoteBot() {
   if (multiplayer.remoteBot) return multiplayer.remoteBot;
   const bot = {
@@ -3811,6 +4290,8 @@ function setPlayerSpawn(slot) {
   pitch = -0.12;
   player.verticalVelocity = 0;
   player.grounded = true;
+  player.fallStartY = player.position.y;
+  player.fallPeakY = player.position.y;
 }
 
 function updateRemoteFromPlayers() {
@@ -3849,6 +4330,7 @@ function updateMultiplayer(dt) {
         weaponIndex,
         characterIndex,
         gunSkinIndex,
+        playerName,
         speed: player.velocity.length(),
         started
       }
