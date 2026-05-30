@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Block Battle 1V1</title>
-    <link rel="stylesheet" href="./src/style.css?v=touch-layout-camera-4" />
+    <title>Block Battle</title>
+    <link rel="stylesheet" href="./src/style.css?v=br-duo-keys-1" />
   </head>
   <body>
     <main id="game">
@@ -15,6 +15,7 @@
               <div>
                 <div class="section-title">Fighter</div>
                 <div class="badge">BLOCK BATTLE</div>
+                <input id="playerNameInput" class="name-input lobby-name-input" maxlength="16" placeholder="Create player name" />
                 <h1 id="characterName">Steel</h1>
                 <p id="characterRole">Balanced assault fighter</p>
               </div>
@@ -46,14 +47,14 @@
             <div class="panel lobby-top">
               <div>
                 <div class="section-title">Lobby</div>
-                <div class="lobby-title">Block Battle 1V1</div>
-                <p>How to play: create or join a room, choose a fighter, then defeat the other player. Use WASD to move, the mouse to aim, left click to attack, right click to aim or use your knife skill, and number keys to switch weapons. On mobile, use the left stick to move and the right side of the screen to look.</p>
+                <div class="lobby-title">Block Battle</div>
+                <p>Choose a fighter, set your player name, then create or join a room. Use WASD to move, the mouse to aim, left click to attack, right click to aim or use your knife skill, and number keys to switch weapons. On mobile, use the left stick to move and the right side of the screen to look.</p>
               </div>
               <div class="resource"><span></span><strong id="coins">2450</strong></div>
               <div class="resource trophy-resource"><span></span><strong id="lobbyTrophies">0</strong></div>
             </div>
             <div class="panel room-panel">
-              <div class="section-title">1V1 Room</div>
+              <div class="section-title">Online Room</div>
               <div class="room-actions">
                 <button id="createRoom" type="button" class="mini-btn primary">Create Room</button>
                 <input id="roomCodeInput" maxlength="6" inputmode="numeric" placeholder="Enter room code" />
@@ -66,13 +67,13 @@
               <div id="characterGrid" class="character-grid"></div>
             </div>
             <div class="panel map-panel">
-              <div class="section-title">1V1 Map</div>
+              <div class="section-title">Game Mode</div>
               <div id="mapGrid" class="map-grid"></div>
             </div>
             <div class="lobby-bottom">
               <div class="panel task-panel">
-                <div class="section-title">1V1 Rule</div>
-                <div class="task-row"><strong>Goal: defeat the opponent</strong><span>Best</span></div>
+                  <div class="section-title">Rule</div>
+                <div class="task-row"><strong>Goal: survive and defeat the opponent</strong><span>Best</span></div>
                 <div class="progress"><div></div></div>
                 <div class="task-row"><strong>Create a room, then share the code</strong><span>Code</span></div>
                 <div class="progress"><div style="width:100%"></div></div>
@@ -80,9 +81,9 @@
               <div class="panel play-panel">
                 <div>
                   <div class="section-title">Ready</div>
-                  <p id="selectedMapInfo">Current mode: Web 1V1. Create or join a room, then start after both players are in.</p>
+                  <p id="selectedMapInfo">Current mode: Duo Battle Royale. Create or join a room, then start after both players are in.</p>
                 </div>
-                <button id="play" type="button">Start 1V1</button>
+                <button id="play" type="button">Start Game</button>
               </div>
             </div>
           </div>
@@ -105,7 +106,10 @@
                 <label>Key Size<input id="touchScale" type="range" min="78" max="116" value="100" /></label>
                 <label>Look Area<input id="touchLookWidth" type="range" min="42" max="76" value="58" /></label>
               </div>
-              <button id="touchLayoutReset" type="button" class="mini-btn">Reset Layout</button>
+              <div class="touch-layout-actions">
+                <button id="touchCustomize" type="button" class="mini-btn primary">Customize Keys</button>
+                <button id="touchLayoutReset" type="button" class="mini-btn">Reset Layout</button>
+              </div>
             </div>
           </div>
         </div>
@@ -174,6 +178,15 @@
           <button class="mobile-weapon" data-weapon="4" type="button">Knife</button>
         </div>
       </div>
+      <div id="touchEditor" class="hidden" aria-label="touch key editor">
+        <div class="touch-editor-bar">
+          <strong>Touch Key Layout</strong>
+          <button id="touchEditorReset" type="button" class="mini-btn">Reset</button>
+          <button id="touchEditorCancel" type="button" class="mini-btn">Cancel</button>
+          <button id="touchEditorSave" type="button" class="mini-btn primary">Save</button>
+        </div>
+        <div id="touchEditorStage"></div>
+      </div>
     </main>
     <script src="./config.js"></script>
     <script type="importmap">
@@ -183,6 +196,6 @@
         }
       }
     </script>
-    <script type="module" src="./src/main.js?v=touch-layout-camera-4"></script>
+    <script type="module" src="./src/main.js?v=br-duo-keys-1"></script>
   </body>
 </html>
